@@ -11,7 +11,6 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            touch-action: none;
             -webkit-touch-callout: none;
             -webkit-user-select: none;
             user-select: none;
@@ -361,7 +360,10 @@
         }
 
         function screenToGameX(sx) {
-            return (sx - offsetX) / scale;
+            let gx = (sx - offsetX) / scale;
+            // 强制限制游戏内 X 范围，防止越界瞬移
+            gx = Math.max(balloon.radius + 10, Math.min(GAME_WIDTH - balloon.radius - 10, gx));
+            return gx;
         }
         
         // ========== 游戏状态 ==========
@@ -767,6 +769,11 @@
             
             // 边界限制
             balloon.x = Math.max(balloon.radius + 10, Math.min(GAME_WIDTH - balloon.radius - 10, balloon.x));
+
+            // 垂直边界保护：防止气球飞出屏幕底部/顶部
+            const minY = cameraY - 200;
+            const maxY = cameraY + GAME_HEIGHT - 50;
+            balloon.y = Math.max(minY, Math.min(maxY, balloon.y));
             
             // 缩放动画
             balloon.scale += (balloon.targetScale - balloon.scale) * 0.1;
@@ -1132,9 +1139,7 @@
             const wobble = Math.sin(balloon.wobblePhase) * balloon.wobbleAmount;
             
             let drawY = balloonScreenY;
-            if (drawY < -50 || drawY > GAME_HEIGHT + 50) {
-                drawY = BALLOON_SCREEN_Y;
-            }
+
             
             if (balloon.invincible > 0 && Math.floor(balloon.invincible / 8) % 2 === 0) {
                 ctx.globalAlpha = 0.35;
@@ -1227,6 +1232,8 @@
 
             const pos = getEventPos(e);
             touchX = screenToGameX(pos.x);
+            // 触摸开始直接同步目标位置，杜绝瞬间偏移
+            balloon.targetX = touchX;
         }
 
         function handleMove(e) {
@@ -1235,23 +1242,35 @@
 
             const pos = getEventPos(e);
             touchX = screenToGameX(pos.x);
+            balloon.targetX = touchX;
         }
 
         function handleEnd(e) {
             e.preventDefault();
+            // 强制重置状态，防止卡死
             isPressing = false;
             isTouching = false;
         }
         
         function getEventPos(e) {
+            const rect = canvas.getBoundingClientRect();
             if (e.touches && e.touches.length > 0) {
-                const rect = canvas.getBoundingClientRect();
+                // 移动端触摸：标准视口坐标
                 return {
                     x: e.touches[0].clientX - rect.left,
                     y: e.touches[0].clientY - rect.top
                 };
+            } else if (e.changedTouches && e.changedTouches.length > 0) {
+                return {
+                    x: e.changedTouches[0].clientX - rect.left,
+                    y: e.changedTouches[0].clientY - rect.top
+                };
             }
-            return { x: e.offsetX, y: e.offsetY };
+            // 鼠标
+            return { 
+                x: e.clientX - rect.left, 
+                y: e.clientY - rect.top 
+            };
         }
         
         canvas.addEventListener('mousedown', handleStart);
