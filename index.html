@@ -277,7 +277,7 @@ html_content = '''<!DOCTYPE html>
             </div>
             
             <div id="speedDisplay">
-                <div id="speedValue">0.5</div>
+                <div id="speedValue">1.0</div>
                 <div id="speedLabel">m/s</div>
             </div>
             
@@ -364,36 +364,43 @@ html_content = '''<!DOCTYPE html>
         let gameState = 'menu';
         let isPressing = false;
         let score = 0;
-        let bestScore = localStorage.getItem('timeBalloonBest4') || 0;
+        let bestScore = localStorage.getItem('timeBalloonBest5') || 0;
         let combo = 0;
         let comboTimer = 0;
         
-        // ========== 气球属性 ==========
+        // ========== 气球属性（带惯性的物理系统）==========
         const balloon = {
             x: 200,
             y: 450,
-            targetX: 200,
-            targetY: 450,
             vx: 0,
             vy: 0,
             radius: 22,
             
-            smoothX: 0.08,
-            smoothY: 0.06,
+            // 跟手性参数 - 响应快但有惯性
+            followSpeed: 0.18,
+            followResponse: 0.35,
             
+            // 惯性阻尼
+            friction: 0.94,
+            verticalFriction: 0.92,
+            
+            // 动画
             wobblePhase: 0,
-            wobbleSpeed: 0.025,
+            wobbleSpeed: 0.03,
             wobbleAmount: 2.5,
             
-            riseBaseSpeed: 0.45,
-            riseSpeed: 0.45,
-            fallSpeed: 0.3,
-            horizontalSpeed: 3,
+            // 物理 - 速度提升
+            riseBaseSpeed: 1.2,
+            riseSpeed: 1.2,
+            fallSpeed: 0.5,
+            horizontalSpeed: 6,
             
+            // 视觉
             glow: 0,
             scale: 1,
             targetScale: 1,
             
+            // 无敌
             invincible: 0
         };
         
@@ -401,10 +408,12 @@ html_content = '''<!DOCTYPE html>
         let height = 0;
         let maxHeight = 0;
         let speedMultiplier = 1;
+        let windMultiplier = 1;
         
-        function updateSpeed() {
+        function updateSpeedAndWind() {
             const segments = Math.floor(height / 100);
-            speedMultiplier = 1 + segments * 0.12;
+            speedMultiplier = 1 + segments * 0.15;
+            windMultiplier = 1 + segments * 0.12;
             balloon.riseSpeed = balloon.riseBaseSpeed * speedMultiplier;
         }
         
@@ -413,9 +422,9 @@ html_content = '''<!DOCTYPE html>
             current: 0,
             target: 0,
             changeTimer: 0,
-            changeInterval: 240,
-            maxStrength: 1.8,
-            smooth: 0.015
+            changeInterval: 200,
+            maxStrength: 2.0,
+            smooth: 0.02
         };
         
         function updateWind() {
@@ -439,9 +448,8 @@ html_content = '''<!DOCTYPE html>
         // ========== 摄像机 ==========
         let cameraY = 0;
         let cameraTargetY = 0;
-        let cameraSmooth = 0.04;
+        let cameraSmooth = 0.06;
         
-        // 气球在屏幕中的目标位置（偏下，留出上方视野看障碍）
         const BALLOON_SCREEN_Y = 420;
         
         // ========== 生命系统 ==========
@@ -620,8 +628,6 @@ html_content = '''<!DOCTYPE html>
         function resetGame() {
             balloon.x = 200;
             balloon.y = 450;
-            balloon.targetX = 200;
-            balloon.targetY = 450;
             balloon.vx = 0;
             balloon.vy = 0;
             balloon.glow = 0;
@@ -635,6 +641,7 @@ html_content = '''<!DOCTYPE html>
             height = 0;
             maxHeight = 0;
             speedMultiplier = 1;
+            windMultiplier = 1;
             
             score = 0;
             combo = 0;
@@ -712,7 +719,7 @@ html_content = '''<!DOCTYPE html>
             gameState = 'gameover';
             if (score > bestScore) {
                 bestScore = score;
-                localStorage.setItem('timeBalloonBest4', bestScore);
+                localStorage.setItem('timeBalloonBest5', bestScore);
             }
             document.getElementById('finalScore').textContent = Math.floor(score);
             document.getElementById('bestScore').textContent = Math.floor(bestScore);
@@ -727,45 +734,64 @@ html_content = '''<!DOCTYPE html>
             difficulty = 1 + height / 600;
             
             updateWind();
-            updateSpeed();
+            updateSpeedAndWind();
             
             balloon.wobblePhase += balloon.wobbleSpeed;
             
+            // ===== 垂直运动（带惯性的物理）=====
             if (isPressing) {
-                balloon.targetY -= balloon.riseSpeed;
-                balloon.glow = Math.min(balloon.glow + 0.04, 1);
-                balloon.targetScale = Math.min(balloon.targetScale + 0.003, 1.1);
+                // 按住时加速上升，有惯性累积
+                balloon.vy -= balloon.riseSpeed * 0.15;
+                balloon.vy = Math.max(balloon.vy, -balloon.riseSpeed * 2.5);
+                balloon.glow = Math.min(balloon.glow + 0.06, 1);
+                balloon.targetScale = Math.min(balloon.targetScale + 0.004, 1.12);
                 
-                if (Math.random() < 0.25) {
-                    createTrail(balloon.x, balloon.y + balloon.radius, 'rgba(0, 212, 255, 0.3)');
+                if (Math.random() < 0.3) {
+                    createTrail(balloon.x, balloon.y + balloon.radius, 'rgba(0, 212, 255, 0.35)');
                 }
             } else {
-                balloon.targetY += balloon.fallSpeed;
-                balloon.glow = Math.max(balloon.glow - 0.06, 0);
-                balloon.targetScale = Math.max(balloon.targetScale - 0.005, 0.95);
+                // 松手时减速，有惯性滑翔
+                balloon.vy += balloon.fallSpeed * 0.08;
+                balloon.vy = Math.min(balloon.vy, balloon.fallSpeed * 1.5);
+                balloon.glow = Math.max(balloon.glow - 0.08, 0);
+                balloon.targetScale = Math.max(balloon.targetScale - 0.006, 0.95);
             }
             
-            // 平滑移动
-            balloon.y += (balloon.targetY - balloon.y) * balloon.smoothY;
+            // 应用垂直惯性阻尼
+            balloon.vy *= balloon.verticalFriction;
+            balloon.y += balloon.vy;
             
-            // 风向影响
-            balloon.targetX += wind.current * 0.4;
-            balloon.targetX = Math.max(balloon.radius + 15, Math.min(GAME_WIDTH - balloon.radius - 15, balloon.targetX));
-            balloon.x += (balloon.targetX - balloon.x) * balloon.smoothX;
+            // ===== 水平运动（跟手 + 惯性）=====
+            // 风向影响随高度提升
+            const effectiveWind = wind.current * windMultiplier;
+            balloon.vx += effectiveWind * 0.08;
+            
+            // 边界反弹
+            if (balloon.x < balloon.radius + 15) {
+                balloon.vx += 0.5;
+                balloon.x = balloon.radius + 15;
+            }
+            if (balloon.x > GAME_WIDTH - balloon.radius - 15) {
+                balloon.vx -= 0.5;
+                balloon.x = GAME_WIDTH - balloon.radius - 15;
+            }
+            
+            // 应用水平惯性阻尼
+            balloon.vx *= balloon.friction;
+            balloon.x += balloon.vx;
             
             // 缩放动画
-            balloon.scale += (balloon.targetScale - balloon.scale) * 0.08;
+            balloon.scale += (balloon.targetScale - balloon.scale) * 0.1;
             
             // 高度计算
             height = Math.max(0, -balloon.y + 450);
             if (height > maxHeight) maxHeight = height;
             
-            // 摄像机跟随（关键修复：让气球保持在屏幕 BALLOON_SCREEN_Y 位置）
-            // cameraY 是游戏世界坐标，表示屏幕顶部对应的游戏世界 y 坐标
+            // 摄像机跟随
             cameraTargetY = balloon.y - BALLOON_SCREEN_Y;
             cameraY += (cameraTargetY - cameraY) * cameraSmooth;
             
-            score += 0.03 * speedMultiplier;
+            score += 0.04 * speedMultiplier;
             
             if (invincibleTime > 0) {
                 invincibleTime--;
@@ -781,7 +807,7 @@ html_content = '''<!DOCTYPE html>
             }
             
             spawnTimer++;
-            const spawnRate = Math.max(50, 100 - difficulty * 4);
+            const spawnRate = Math.max(45, 90 - difficulty * 4);
             if (spawnTimer > spawnRate) {
                 spawnTimer = 0;
                 spawnObstacle();
@@ -881,7 +907,7 @@ html_content = '''<!DOCTYPE html>
                 if (p.life <= 0) particles.splice(i, 1);
             });
             
-            // 更新背景（相对移动感）
+            // 更新背景
             stars.forEach(star => {
                 const moveSpeed = isPressing ? star.speed * speedMultiplier * 1.5 : star.speed * 0.3;
                 star.y += moveSpeed;
@@ -894,7 +920,7 @@ html_content = '''<!DOCTYPE html>
             });
             
             clouds.forEach(cloud => {
-                cloud.x += wind.current * 0.25;
+                cloud.x += wind.current * 0.25 * windMultiplier;
                 const moveSpeed = isPressing ? cloud.speed * speedMultiplier : cloud.speed * 0.2;
                 cloud.y += moveSpeed;
                 
@@ -1113,12 +1139,11 @@ html_content = '''<!DOCTYPE html>
             });
             ctx.globalAlpha = 1;
             
-            // ========== 绘制气球（关键修复）==========
-            // 气球的世界坐标转换为屏幕坐标
+            // ========== 绘制气球 ==========
             const balloonScreenY = balloon.y - cameraY + 350;
             const wobble = Math.sin(balloon.wobblePhase) * balloon.wobbleAmount;
             
-            // 调试：如果气球不在屏幕内，强制显示在屏幕中间
+            // 安全边界
             let drawY = balloonScreenY;
             if (drawY < -50 || drawY > GAME_HEIGHT + 50) {
                 drawY = BALLOON_SCREEN_Y;
@@ -1274,4 +1299,4 @@ html_content = '''<!DOCTYPE html>
 with open('/mnt/agents/output/time_balloon_demo.html', 'w', encoding='utf-8') as f:
     f.write(html_content)
 
-print("✅ 已修复气球显示问题！")
+print("✅ 已更新手感优化版本！")
