@@ -1,0 +1,899 @@
+
+html_content = '''<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>时间气球 - Time Balloon</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: none;
+        }
+        
+        body {
+            background: #1a1a2e;
+            overflow: hidden;
+            font-family: 'Microsoft YaHei', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 400px;
+            height: 700px;
+            background: linear-gradient(180deg, #0f0f23 0%, #1a1a3e 50%, #16213e 100%);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 0 40px rgba(100, 200, 255, 0.3);
+        }
+        
+        canvas {
+            display: block;
+        }
+        
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        #pressureBar {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            width: 120px;
+            height: 12px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.3);
+            overflow: hidden;
+        }
+        
+        #pressureFill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            border-radius: 6px;
+            transition: width 0.1s;
+        }
+        
+        #pressureLabel {
+            position: absolute;
+            top: 30px;
+            left: 15px;
+            color: rgba(255,255,255,0.7);
+            font-size: 10px;
+        }
+        
+        #score {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            color: #ffd700;
+            font-size: 20px;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(255,215,0,0.5);
+        }
+        
+        #timeState {
+            position: absolute;
+            top: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+        }
+        
+        #timeState.flowing {
+            background: rgba(0, 212, 255, 0.2);
+            color: #00d4ff;
+            border: 1px solid rgba(0, 212, 255, 0.5);
+        }
+        
+        #timeState.paused {
+            background: rgba(255, 100, 100, 0.2);
+            color: #ff6464;
+            border: 1px solid rgba(255, 100, 100, 0.5);
+        }
+        
+        #startScreen, #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0,0,0,0.85);
+            pointer-events: all;
+            z-index: 10;
+        }
+        
+        #gameOverScreen {
+            display: none;
+        }
+        
+        .title {
+            font-size: 36px;
+            color: #00d4ff;
+            text-shadow: 0 0 20px rgba(0,212,255,0.5);
+            margin-bottom: 10px;
+            letter-spacing: 4px;
+        }
+        
+        .subtitle {
+            color: rgba(255,255,255,0.6);
+            font-size: 14px;
+            margin-bottom: 40px;
+        }
+        
+        .btn {
+            padding: 12px 40px;
+            background: linear-gradient(135deg, #00d4ff, #7b2cbf);
+            border: none;
+            border-radius: 30px;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            pointer-events: all;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 20px rgba(0,212,255,0.3);
+        }
+        
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 30px rgba(0,212,255,0.5);
+        }
+        
+        .btn:active {
+            transform: scale(0.95);
+        }
+        
+        .hint {
+            margin-top: 30px;
+            color: rgba(255,255,255,0.4);
+            font-size: 12px;
+            text-align: center;
+            line-height: 2;
+        }
+        
+        .finalScore {
+            font-size: 48px;
+            color: #ffd700;
+            text-shadow: 0 0 20px rgba(255,215,0,0.5);
+            margin-bottom: 10px;
+        }
+        
+        .bestScore {
+            color: rgba(255,255,255,0.5);
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        
+        #combo {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ff6b6b;
+            font-size: 24px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s;
+            text-shadow: 0 0 10px rgba(255,107,107,0.5);
+        }
+        
+        #combo.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="400" height="700"></canvas>
+        
+        <div id="ui">
+            <div id="pressureBar">
+                <div id="pressureFill"></div>
+            </div>
+            <div id="pressureLabel">气压值</div>
+            <div id="score">0</div>
+            <div id="timeState" class="paused">⏸ 时间暂停</div>
+            <div id="combo"></div>
+        </div>
+        
+        <div id="startScreen">
+            <div class="title">⏱ 时间气球</div>
+            <div class="subtitle">Time Balloon</div>
+            <button class="btn" onclick="startGame()">开始游戏</button>
+            <div class="hint">
+                🎈 按住屏幕 = 时间流动 + 气球上升<br>
+                ✋ 松开屏幕 = 时间暂停 + 缓慢下降<br>
+                👆 左右滑动 = 控制水平移动<br>
+                ⚡ 利用暂停观察子弹轨迹，从缝隙穿过
+            </div>
+        </div>
+        
+        <div id="gameOverScreen">
+            <div class="finalScore" id="finalScore">0</div>
+            <div class="bestScore">最佳: <span id="bestScore">0</span></div>
+            <button class="btn" onclick="restartGame()">再来一次</button>
+            <div class="hint" style="margin-top:20px">
+                💀 气球爆炸了！<br>
+                下次注意躲避障碍和子弹
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 游戏状态
+        let gameState = 'menu'; // menu, playing, gameover
+        let isPressing = false;
+        let score = 0;
+        let bestScore = localStorage.getItem('timeBalloonBest') || 0;
+        let combo = 0;
+        let comboTimer = 0;
+        
+        // 气球属性
+        const balloon = {
+            x: 200,
+            y: 500,
+            radius: 20,
+            vx: 0,
+            vy: 0,
+            pressure: 100,
+            maxPressure: 100,
+            pressureDrain: 0.3,
+            pressureRecover: 0.5,
+            riseSpeed: 4,
+            fallSpeed: 1.5,
+            horizontalSpeed: 5,
+            friction: 0.92,
+            glow: 0
+        };
+        
+        // 摄像机/滚动
+        let cameraY = 0;
+        let distance = 0;
+        
+        // 障碍物数组
+        let obstacles = [];
+        let bullets = [];
+        let particles = [];
+        let coins = [];
+        let stars = [];
+        
+        // 生成参数
+        let spawnTimer = 0;
+        let difficulty = 1;
+        
+        // 触摸/鼠标输入
+        let touchX = 200;
+        
+        // 初始化背景星星
+        function initStars() {
+            stars = [];
+            for (let i = 0; i < 100; i++) {
+                stars.push({
+                    x: Math.random() * 400,
+                    y: Math.random() * 2000 - 1000,
+                    size: Math.random() * 2 + 0.5,
+                    brightness: Math.random(),
+                    speed: Math.random() * 0.5 + 0.2
+                });
+            }
+        }
+        
+        // 生成障碍物
+        function spawnObstacle() {
+            const types = ['spike', 'saw', 'laser', 'missile'];
+            const type = types[Math.floor(Math.random() * Math.min(types.length, Math.floor(difficulty) + 1))];
+            
+            let obs = {
+                type: type,
+                y: cameraY - 100,
+                active: true
+            };
+            
+            switch(type) {
+                case 'spike':
+                    obs.x = Math.random() * 300 + 50;
+                    obs.width = 40;
+                    obs.height = 40;
+                    obs.rotation = 0;
+                    break;
+                case 'saw':
+                    obs.x = Math.random() * 300 + 50;
+                    obs.radius = 25;
+                    obs.angle = 0;
+                    obs.orbitX = obs.x;
+                    obs.orbitRadius = 60;
+                    obs.orbitSpeed = 0.02;
+                    break;
+                case 'laser':
+                    obs.x = 0;
+                    obs.width = 400;
+                    obs.height = 4;
+                    obs.active = false;
+                    obs.timer = 0;
+                    obs.interval = 120;
+                    break;
+                case 'missile':
+                    obs.x = Math.random() * 350 + 25;
+                    obs.y = cameraY - 50;
+                    obs.radius = 8;
+                    obs.vx = 0;
+                    obs.vy = 2;
+                    obs.trail = [];
+                    break;
+            }
+            
+            obstacles.push(obs);
+        }
+        
+        // 生成金币
+        function spawnCoins() {
+            const pattern = Math.floor(Math.random() * 3);
+            const baseX = Math.random() * 250 + 75;
+            
+            for (let i = 0; i < 5; i++) {
+                let x = baseX;
+                if (pattern === 1) x = 100 + i * 50;
+                if (pattern === 2) x = 200 + Math.sin(i) * 80;
+                
+                coins.push({
+                    x: x,
+                    y: cameraY - 100 - i * 40,
+                    radius: 10,
+                    collected: false,
+                    bob: Math.random() * Math.PI * 2
+                });
+            }
+        }
+        
+        // 创建粒子
+        function createParticles(x, y, color, count = 10) {
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: (Math.random() - 0.5) * 6,
+                    life: 1,
+                    decay: Math.random() * 0.03 + 0.02,
+                    color: color,
+                    size: Math.random() * 4 + 2
+                });
+            }
+        }
+        
+        // 碰撞检测
+        function checkCollision(balloon, obj) {
+            const dx = balloon.x - obj.x;
+            const dy = (balloon.y - cameraY) - (obj.y - cameraY);
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            return dist < balloon.radius + (obj.radius || obj.width / 2 || 15);
+        }
+        
+        // 开始游戏
+        function startGame() {
+            document.getElementById('startScreen').style.display = 'none';
+            gameState = 'playing';
+            resetGame();
+            gameLoop();
+        }
+        
+        // 重置游戏
+        function resetGame() {
+            balloon.x = 200;
+            balloon.y = 500;
+            balloon.vx = 0;
+            balloon.vy = 0;
+            balloon.pressure = 100;
+            balloon.glow = 0;
+            
+            cameraY = 0;
+            distance = 0;
+            score = 0;
+            combo = 0;
+            difficulty = 1;
+            
+            obstacles = [];
+            bullets = [];
+            particles = [];
+            coins = [];
+            
+            spawnTimer = 0;
+            
+            initStars();
+            
+            // 预生成一些障碍
+            for (let i = 0; i < 5; i++) {
+                spawnObstacle();
+                obstacles[obstacles.length - 1].y = -200 - i * 200;
+            }
+            spawnCoins();
+            coins.forEach(c => c.y = -150);
+        }
+        
+        // 重新开始
+        function restartGame() {
+            document.getElementById('gameOverScreen').style.display = 'none';
+            gameState = 'playing';
+            resetGame();
+        }
+        
+        // 游戏结束
+        function gameOver() {
+            gameState = 'gameover';
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('timeBalloonBest', bestScore);
+            }
+            document.getElementById('finalScore').textContent = Math.floor(score);
+            document.getElementById('bestScore').textContent = Math.floor(bestScore);
+            document.getElementById('gameOverScreen').style.display = 'flex';
+            createParticles(balloon.x, balloon.y - cameraY + 350, '#ff6b6b', 30);
+        }
+        
+        // 更新逻辑
+        function update() {
+            if (gameState !== 'playing') return;
+            
+            // 难度递增
+            difficulty = 1 + distance / 2000;
+            
+            // 气压管理
+            if (isPressing) {
+                balloon.pressure -= balloon.pressureDrain;
+                if (balloon.pressure <= 0) {
+                    balloon.pressure = 0;
+                    isPressing = false; // 强制松开
+                }
+            } else {
+                balloon.pressure += balloon.pressureRecover;
+                if (balloon.pressure > balloon.maxPressure) {
+                    balloon.pressure = balloon.maxPressure;
+                }
+            }
+            
+            // 气球物理
+            if (isPressing) {
+                // 时间流动：上升
+                balloon.vy = -balloon.riseSpeed;
+                balloon.glow = Math.min(balloon.glow + 0.1, 1);
+                
+                // 水平移动（向触摸位置靠近）
+                const dx = touchX - balloon.x;
+                balloon.vx += dx * 0.02;
+                balloon.vx = Math.max(-balloon.horizontalSpeed, Math.min(balloon.horizontalSpeed, balloon.vx));
+                
+                // 摄像机跟随（向上滚动）
+                if (balloon.y < cameraY + 300) {
+                    cameraY -= balloon.riseSpeed;
+                    distance += balloon.riseSpeed;
+                }
+            } else {
+                // 时间暂停：缓慢下降
+                balloon.vy = balloon.fallSpeed;
+                balloon.vx *= balloon.friction;
+                balloon.glow = Math.max(balloon.glow - 0.1, 0);
+            }
+            
+            balloon.x += balloon.vx;
+            balloon.y += balloon.vy;
+            
+            // 边界限制
+            balloon.x = Math.max(balloon.radius, Math.min(400 - balloon.radius, balloon.x));
+            
+            // 分数
+            score += isPressing ? 0.1 : 0.05;
+            
+            // 连击
+            if (comboTimer > 0) {
+                comboTimer--;
+                if (comboTimer <= 0) {
+                    combo = 0;
+                    document.getElementById('combo').classList.remove('show');
+                }
+            }
+            
+            // 生成新障碍
+            spawnTimer++;
+            if (spawnTimer > Math.max(60, 120 - difficulty * 10)) {
+                spawnTimer = 0;
+                spawnObstacle();
+                if (Math.random() < 0.3) spawnCoins();
+            }
+            
+            // 更新障碍
+            obstacles.forEach((obs, i) => {
+                if (!obs.active) return;
+                
+                switch(obs.type) {
+                    case 'saw':
+                        if (isPressing) {
+                            obs.angle += obs.orbitSpeed;
+                            obs.x = obs.orbitX + Math.cos(obs.angle) * obs.orbitRadius;
+                        }
+                        break;
+                    case 'laser':
+                        obs.timer++;
+                        if (obs.timer % obs.interval < 30) {
+                            obs.active = true;
+                        } else {
+                            obs.active = false;
+                        }
+                        break;
+                    case 'missile':
+                        if (isPressing) {
+                            obs.trail.push({x: obs.x, y: obs.y});
+                            if (obs.trail.length > 10) obs.trail.shift();
+                            
+                            // 追踪气球
+                            const dx = balloon.x - obs.x;
+                            const dy = (balloon.y) - obs.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+                            obs.vx += (dx / dist) * 0.1;
+                            obs.vy += (dy / dist) * 0.1;
+                            obs.vx = Math.max(-3, Math.min(3, obs.vx));
+                            obs.vy = Math.max(-3, Math.min(3, obs.vy));
+                            
+                            obs.x += obs.vx;
+                            obs.y += obs.vy;
+                        }
+                        break;
+                }
+                
+                // 碰撞检测
+                if (checkCollision(balloon, obs)) {
+                    if (obs.type !== 'laser' || obs.active) {
+                        gameOver();
+                    }
+                }
+                
+                // 清理远离的障碍
+                if (obs.y > cameraY + 900) {
+                    obstacles.splice(i, 1);
+                }
+            });
+            
+            // 更新金币
+            coins.forEach((coin, i) => {
+                if (coin.collected) return;
+                
+                coin.bob += 0.05;
+                const dx = balloon.x - coin.x;
+                const dy = (balloon.y - cameraY) - (coin.y - cameraY);
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < balloon.radius + coin.radius) {
+                    coin.collected = true;
+                    score += 10;
+                    combo++;
+                    comboTimer = 120;
+                    document.getElementById('combo').textContent = combo + ' 连击!';
+                    document.getElementById('combo').classList.add('show');
+                    createParticles(coin.x, coin.y - cameraY + 350, '#ffd700', 5);
+                }
+                
+                if (coin.y > cameraY + 900) {
+                    coins.splice(i, 1);
+                }
+            });
+            
+            // 更新粒子
+            particles.forEach((p, i) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= p.decay;
+                p.vy += 0.1;
+                if (p.life <= 0) particles.splice(i, 1);
+            });
+            
+            // 更新背景星星
+            stars.forEach(star => {
+                if (isPressing) {
+                    star.y += star.speed * 3;
+                }
+                if (star.y > cameraY + 900) {
+                    star.y = cameraY - 100;
+                    star.x = Math.random() * 400;
+                }
+            });
+            
+            // 更新UI
+            document.getElementById('score').textContent = Math.floor(score);
+            document.getElementById('pressureFill').style.width = (balloon.pressure / balloon.maxPressure * 100) + '%';
+            
+            const timeState = document.getElementById('timeState');
+            if (isPressing) {
+                timeState.className = 'flowing';
+                timeState.textContent = '▶ 时间流动';
+            } else {
+                timeState.className = 'paused';
+                timeState.textContent = '⏸ 时间暂停';
+            }
+        }
+        
+        // 绘制
+        function draw() {
+            ctx.clearRect(0, 0, 400, 700);
+            
+            // 绘制背景星星
+            stars.forEach(star => {
+                const alpha = star.brightness * (0.3 + Math.sin(Date.now() * 0.003 + star.x) * 0.3);
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y - cameraY + 350, star.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            
+            // 绘制金币
+            coins.forEach(coin => {
+                if (coin.collected) return;
+                const bobY = Math.sin(coin.bob) * 5;
+                const screenY = coin.y - cameraY + 350 + bobY;
+                
+                // 金币光晕
+                ctx.fillStyle = 'rgba(255, 215, 0, 0.2)';
+                ctx.beginPath();
+                ctx.arc(coin.x, screenY, coin.radius + 5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 金币本体
+                ctx.fillStyle = '#ffd700';
+                ctx.beginPath();
+                ctx.arc(coin.x, screenY, coin.radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = '#ffed4e';
+                ctx.beginPath();
+                ctx.arc(coin.x - 2, screenY - 2, coin.radius * 0.5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            
+            // 绘制障碍
+            obstacles.forEach(obs => {
+                if (!obs.active && obs.type !== 'laser') return;
+                
+                const screenY = obs.y - cameraY + 350;
+                
+                switch(obs.type) {
+                    case 'spike':
+                        ctx.fillStyle = '#ff4757';
+                        ctx.beginPath();
+                        ctx.moveTo(obs.x, screenY - obs.height/2);
+                        ctx.lineTo(obs.x - obs.width/2, screenY + obs.height/2);
+                        ctx.lineTo(obs.x + obs.width/2, screenY + obs.height/2);
+                        ctx.closePath();
+                        ctx.fill();
+                        
+                        ctx.strokeStyle = '#ff6b81';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                        break;
+                        
+                    case 'saw':
+                        ctx.save();
+                        ctx.translate(obs.x, screenY);
+                        ctx.rotate(obs.angle * 3);
+                        
+                        ctx.fillStyle = '#ff6348';
+                        for (let i = 0; i < 8; i++) {
+                            ctx.rotate(Math.PI / 4);
+                            ctx.fillRect(-4, -obs.radius, 8, obs.radius * 0.6);
+                        }
+                        
+                        ctx.beginPath();
+                        ctx.arc(0, 0, obs.radius * 0.4, 0, Math.PI * 2);
+                        ctx.fillStyle = '#2f3542';
+                        ctx.fill();
+                        
+                        ctx.restore();
+                        break;
+                        
+                    case 'laser':
+                        const isActive = obs.timer % obs.interval < 30;
+                        ctx.fillStyle = isActive ? 'rgba(255, 50, 50, 0.8)' : 'rgba(255, 50, 50, 0.15)';
+                        ctx.fillRect(obs.x, screenY, obs.width, obs.height);
+                        
+                        if (isActive) {
+                            ctx.shadowColor = '#ff3333';
+                            ctx.shadowBlur = 10;
+                            ctx.fillRect(obs.x, screenY, obs.width, obs.height);
+                            ctx.shadowBlur = 0;
+                        }
+                        break;
+                        
+                    case 'missile':
+                        // 尾迹
+                        obs.trail.forEach((t, i) => {
+                            const tScreenY = t.y - cameraY + 350;
+                            ctx.fillStyle = `rgba(255, 100, 50, ${i / obs.trail.length * 0.5})`;
+                            ctx.beginPath();
+                            ctx.arc(t.x, tScreenY, obs.radius * (i / obs.trail.length), 0, Math.PI * 2);
+                            ctx.fill();
+                        });
+                        
+                        // 导弹本体
+                        ctx.fillStyle = '#ff6348';
+                        ctx.beginPath();
+                        ctx.arc(obs.x, screenY, obs.radius, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        ctx.fillStyle = '#ffd700';
+                        ctx.beginPath();
+                        ctx.arc(obs.x, screenY, obs.radius * 0.4, 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
+                }
+            });
+            
+            // 绘制粒子
+            particles.forEach(p => {
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+            
+            // 绘制气球
+            const screenBalloonY = balloon.y - cameraY + 350;
+            
+            // 气球光晕
+            if (balloon.glow > 0) {
+                ctx.shadowColor = '#00d4ff';
+                ctx.shadowBlur = 20 + balloon.glow * 15;
+            }
+            
+            // 气球主体
+            const gradient = ctx.createRadialGradient(
+                balloon.x - 5, screenBalloonY - 5, 0,
+                balloon.x, screenBalloonY, balloon.radius
+            );
+            gradient.addColorStop(0, '#7ee8fa');
+            gradient.addColorStop(0.7, '#00d4ff');
+            gradient.addColorStop(1, '#0099cc');
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.ellipse(balloon.x, screenBalloonY, balloon.radius, balloon.radius * 1.15, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            
+            // 高光
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.beginPath();
+            ctx.ellipse(balloon.x - 6, screenBalloonY - 8, 6, 8, -0.3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 气球绳
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(balloon.x, screenBalloonY + balloon.radius * 1.1);
+            ctx.quadraticCurveTo(
+                balloon.x + Math.sin(Date.now() * 0.005) * 5, 
+                screenBalloonY + balloon.radius * 1.1 + 15,
+                balloon.x, 
+                screenBalloonY + balloon.radius * 1.1 + 25
+            );
+            ctx.stroke();
+            
+            // 暂停时的视觉效果
+            if (!isPressing && gameState === 'playing') {
+                ctx.fillStyle = 'rgba(100, 200, 255, 0.08)';
+                ctx.fillRect(0, 0, 400, 700);
+                
+                // 扫描线效果
+                ctx.strokeStyle = 'rgba(100, 200, 255, 0.1)';
+                ctx.lineWidth = 1;
+                for (let i = 0; i < 700; i += 20) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, i);
+                    ctx.lineTo(400, i);
+                    ctx.stroke();
+                }
+            }
+            
+            // 气压警告
+            if (balloon.pressure < 20) {
+                ctx.fillStyle = `rgba(255, 50, 50, ${0.3 + Math.sin(Date.now() * 0.01) * 0.2})`;
+                ctx.fillRect(0, 0, 400, 700);
+            }
+        }
+        
+        // 游戏循环
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // 输入处理
+        canvas.addEventListener('mousedown', (e) => {
+            if (gameState !== 'playing') return;
+            isPressing = true;
+            touchX = e.offsetX;
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            touchX = e.offsetX;
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+            isPressing = false;
+        });
+        
+        canvas.addEventListener('mouseleave', () => {
+            isPressing = false;
+        });
+        
+        // 触摸支持
+        canvas.addEventListener('touchstart', (e) => {
+            if (gameState !== 'playing') return;
+            e.preventDefault();
+            isPressing = true;
+            const rect = canvas.getBoundingClientRect();
+            touchX = e.touches[0].clientX - rect.left;
+        }, {passive: false});
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            touchX = e.touches[0].clientX - rect.left;
+        }, {passive: false});
+        
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            isPressing = false;
+        }, {passive: false});
+        
+        // 键盘支持（空格键）
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && gameState === 'playing') {
+                isPressing = true;
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            if (e.code === 'Space') {
+                isPressing = false;
+            }
+        });
+        
+        // 初始化
+        initStars();
+        draw();
+    </script>
+</body>
+</html>'''
+
+# 保存文件
+with open('/mnt/agents/output/time_balloon_demo.html', 'w', encoding='utf-8') as f:
+    f.write(html_content)
+
+print("文件已保存！")
