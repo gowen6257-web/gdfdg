@@ -277,7 +277,7 @@ html_content = '''<!DOCTYPE html>
             </div>
             
             <div id="speedDisplay">
-                <div id="speedValue">0.9</div>
+                <div id="speedValue">0.5</div>
                 <div id="speedLabel">m/s</div>
             </div>
             
@@ -364,41 +364,36 @@ html_content = '''<!DOCTYPE html>
         let gameState = 'menu';
         let isPressing = false;
         let score = 0;
-        let bestScore = localStorage.getItem('timeBalloonBest3') || 0;
+        let bestScore = localStorage.getItem('timeBalloonBest4') || 0;
         let combo = 0;
         let comboTimer = 0;
         
         // ========== 气球属性 ==========
         const balloon = {
             x: 200,
-            y: 400,
+            y: 450,
             targetX: 200,
-            targetY: 400,
+            targetY: 450,
             vx: 0,
             vy: 0,
             radius: 22,
             
-            // 平滑参数
             smoothX: 0.08,
             smoothY: 0.06,
             
-            // 动画
             wobblePhase: 0,
             wobbleSpeed: 0.025,
             wobbleAmount: 2.5,
             
-            // 物理 - 速度减半
-            riseBaseSpeed: 0.9,
-            riseSpeed: 0.9,
-            fallSpeed: 0.6,
+            riseBaseSpeed: 0.45,
+            riseSpeed: 0.45,
+            fallSpeed: 0.3,
             horizontalSpeed: 3,
             
-            // 视觉
             glow: 0,
             scale: 1,
             targetScale: 1,
             
-            // 无敌
             invincible: 0
         };
         
@@ -434,20 +429,20 @@ html_content = '''<!DOCTYPE html>
         
         function getWindDescription(strength) {
             const abs = Math.abs(strength);
-            if (abs < 0.3) return '无风';
+            if (abs < 0.2) return '无风';
             if (abs < 0.8) return '微风';
             if (abs < 1.3) return '和风';
             if (abs < 1.8) return '强风';
             return '狂风';
         }
         
-        // ========== 摄像机（气球不固定，有轻微跟随） ==========
+        // ========== 摄像机 ==========
         let cameraY = 0;
         let cameraTargetY = 0;
         let cameraSmooth = 0.04;
         
-        // 气球在屏幕中的目标位置（偏下一点，留出上方视野）
-        const BALLOON_SCREEN_TARGET_Y = 420;
+        // 气球在屏幕中的目标位置（偏下，留出上方视野看障碍）
+        const BALLOON_SCREEN_Y = 420;
         
         // ========== 生命系统 ==========
         let lives = 3;
@@ -624,9 +619,9 @@ html_content = '''<!DOCTYPE html>
         
         function resetGame() {
             balloon.x = 200;
-            balloon.y = 400;
+            balloon.y = 450;
             balloon.targetX = 200;
-            balloon.targetY = 400;
+            balloon.targetY = 450;
             balloon.vx = 0;
             balloon.vy = 0;
             balloon.glow = 0;
@@ -717,7 +712,7 @@ html_content = '''<!DOCTYPE html>
             gameState = 'gameover';
             if (score > bestScore) {
                 bestScore = score;
-                localStorage.setItem('timeBalloonBest3', bestScore);
+                localStorage.setItem('timeBalloonBest4', bestScore);
             }
             document.getElementById('finalScore').textContent = Math.floor(score);
             document.getElementById('bestScore').textContent = Math.floor(bestScore);
@@ -762,11 +757,12 @@ html_content = '''<!DOCTYPE html>
             balloon.scale += (balloon.targetScale - balloon.scale) * 0.08;
             
             // 高度计算
-            height = Math.max(0, -balloon.y + 400);
+            height = Math.max(0, -balloon.y + 450);
             if (height > maxHeight) maxHeight = height;
             
-            // 摄像机跟随（气球在屏幕偏下位置，有轻微滞后）
-            cameraTargetY = balloon.y - BALLOON_SCREEN_TARGET_Y;
+            // 摄像机跟随（关键修复：让气球保持在屏幕 BALLOON_SCREEN_Y 位置）
+            // cameraY 是游戏世界坐标，表示屏幕顶部对应的游戏世界 y 坐标
+            cameraTargetY = balloon.y - BALLOON_SCREEN_Y;
             cameraY += (cameraTargetY - cameraY) * cameraSmooth;
             
             score += 0.03 * speedMultiplier;
@@ -1117,9 +1113,16 @@ html_content = '''<!DOCTYPE html>
             });
             ctx.globalAlpha = 1;
             
-            // 绘制气球
-            const bsy = balloon.y - cameraY + 350;
+            // ========== 绘制气球（关键修复）==========
+            // 气球的世界坐标转换为屏幕坐标
+            const balloonScreenY = balloon.y - cameraY + 350;
             const wobble = Math.sin(balloon.wobblePhase) * balloon.wobbleAmount;
+            
+            // 调试：如果气球不在屏幕内，强制显示在屏幕中间
+            let drawY = balloonScreenY;
+            if (drawY < -50 || drawY > GAME_HEIGHT + 50) {
+                drawY = BALLOON_SCREEN_Y;
+            }
             
             if (balloon.invincible > 0 && Math.floor(balloon.invincible / 8) % 2 === 0) {
                 ctx.globalAlpha = 0.35;
@@ -1132,8 +1135,8 @@ html_content = '''<!DOCTYPE html>
             
             const bs = balloon.scale;
             const gradient = ctx.createRadialGradient(
-                balloon.x - 4, bsy - 4, 0,
-                balloon.x, bsy, balloon.radius * bs
+                balloon.x - 4, drawY - 4, 0,
+                balloon.x, drawY, balloon.radius * bs
             );
             gradient.addColorStop(0, '#81ecec');
             gradient.addColorStop(0.6, '#00d4ff');
@@ -1143,7 +1146,7 @@ html_content = '''<!DOCTYPE html>
             ctx.beginPath();
             ctx.ellipse(
                 balloon.x + wobble * 0.25, 
-                bsy, 
+                drawY, 
                 balloon.radius * bs, 
                 balloon.radius * 1.12 * bs, 
                 wobble * 0.015, 
@@ -1158,7 +1161,7 @@ html_content = '''<!DOCTYPE html>
             ctx.beginPath();
             ctx.ellipse(
                 balloon.x - 5 + wobble * 0.15, 
-                bsy - 7, 
+                drawY - 7, 
                 5 * bs, 
                 7 * bs, 
                 -0.25, 
@@ -1171,19 +1174,19 @@ html_content = '''<!DOCTYPE html>
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
             ctx.lineWidth = 1.5;
             ctx.beginPath();
-            ctx.moveTo(balloon.x + wobble * 0.25, bsy + balloon.radius * 1.08 * bs);
+            ctx.moveTo(balloon.x + wobble * 0.25, drawY + balloon.radius * 1.08 * bs);
             
             const ropeSwing = Math.sin(Date.now() * 0.0025) * 6 + wind.current * 2.5;
             ctx.bezierCurveTo(
-                balloon.x + ropeSwing, bsy + balloon.radius * 1.25 * bs,
-                balloon.x + ropeSwing * 0.4, bsy + balloon.radius * 1.45 * bs,
-                balloon.x, bsy + balloon.radius * 1.55 * bs + 12
+                balloon.x + ropeSwing, drawY + balloon.radius * 1.25 * bs,
+                balloon.x + ropeSwing * 0.4, drawY + balloon.radius * 1.45 * bs,
+                balloon.x, drawY + balloon.radius * 1.55 * bs + 12
             );
             ctx.stroke();
             
             // 小篮子
             ctx.fillStyle = 'rgba(180, 140, 90, 0.55)';
-            ctx.fillRect(balloon.x - 5, bsy + balloon.radius * 1.55 * bs + 12, 10, 7);
+            ctx.fillRect(balloon.x - 5, drawY + balloon.radius * 1.55 * bs + 12, 10, 7);
             
             ctx.globalAlpha = 1;
             
@@ -1271,4 +1274,4 @@ html_content = '''<!DOCTYPE html>
 with open('/mnt/agents/output/time_balloon_demo.html', 'w', encoding='utf-8') as f:
     f.write(html_content)
 
-print("✅ 已更新！")
+print("✅ 已修复气球显示问题！")
