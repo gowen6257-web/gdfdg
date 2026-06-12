@@ -358,10 +358,10 @@
         function screenToGame(sx, sy) {
             return { x: (sx - offsetX) / scale, y: (sy - offsetY) / scale };
         }
-        
-        // 修复：增加X轴边界限制
+
         function screenToGameX(sx) {
             let gx = (sx - offsetX) / scale;
+            // 强制限制游戏内 X 范围，防止越界瞬移
             gx = Math.max(balloon.radius + 10, Math.min(GAME_WIDTH - balloon.radius - 10, gx));
             return gx;
         }
@@ -374,30 +374,35 @@
         let combo = 0;
         let comboTimer = 0;
         
-        // ========== 气球属性 ==========
+        // ========== 气球属性（第一版手感：直接跟手）==========
         const balloon = {
             x: 200,
             y: 450,
 
+            // 水平：带轻微贝塞尔惯性的跟手
             targetX: 200,
             vx: 0,
-            followSmooth: 0.15,
-            followDamping: 0.88,
+            followSmooth: 0.15,   // 跟手响应速度
+            followDamping: 0.88,  // 轻微惯性阻尼
 
+            // 垂直运动
             riseBaseSpeed: 1.0,
             riseSpeed: 1.0,
             fallSpeed: 0.4,
 
             radius: 22,
 
+            // 动画
             wobblePhase: 0,
             wobbleSpeed: 0.03,
             wobbleAmount: 2,
 
+            // 视觉
             glow: 0,
             scale: 1,
             targetScale: 1,
 
+            // 无敌
             invincible: 0
         };
         
@@ -412,7 +417,7 @@
             balloon.riseSpeed = balloon.riseBaseSpeed * speedMultiplier;
         }
         
-        // ========== 风向系统 ==========
+        // ========== 风向系统（只影响障碍移动，不影响气球）==========
         const wind = {
             current: 0,
             target: 0,
@@ -444,7 +449,8 @@
         let cameraY = 0;
         let cameraTargetY = 0;
         let cameraSmooth = 0.06;
-        const BALLOON_SCREEN_Y = 420;
+        
+        const BALLOON_SCREEN_Y = 400;  // 气球在屏幕上的目标位置（约57%处）
         
         // ========== 生命系统 ==========
         let lives = 3;
@@ -634,8 +640,8 @@
             balloon.invincible = 0;
             balloon.wobblePhase = 0;
             
-            cameraY = 0;
-            cameraTargetY = 0;
+            cameraY = balloon.y - BALLOON_SCREEN_Y;
+            cameraTargetY = cameraY;
             height = 0;
             maxHeight = 0;
             speedMultiplier = 1;
@@ -689,7 +695,7 @@
             balloon.targetScale = 0.75;
             setTimeout(() => { balloon.targetScale = 1; }, 250);
             
-            createParticles(balloon.x, balloon.y - cameraY + 350, '#ff4757', 15);
+            createParticles(balloon.x, balloon.y - cameraY, '#ff4757', 15);
             
             updateHearts();
             
@@ -724,7 +730,7 @@
             document.getElementById('finalScore').textContent = Math.floor(score);
             document.getElementById('bestScore').textContent = Math.floor(bestScore);
             document.getElementById('gameOverScreen').style.display = 'flex';
-            createParticles(balloon.x, balloon.y - cameraY + 350, '#ff4757', 25);
+            createParticles(balloon.x, balloon.y - cameraY, '#ff4757', 25);
         }
         
         // ========== 主更新循环 ==========
@@ -738,7 +744,7 @@
             
             balloon.wobblePhase += balloon.wobbleSpeed;
             
-            // 垂直运动
+            // ===== 垂直运动：简单直接 =====
             if (isPressing) {
                 balloon.y -= balloon.riseSpeed;
                 balloon.glow = Math.min(balloon.glow + 0.06, 1);
@@ -753,16 +759,18 @@
                 balloon.targetScale = Math.max(balloon.targetScale - 0.006, 0.95);
             }
             
-            // 水平运动
+            // ===== 水平运动：带轻微贝塞尔惯性的跟手 =====
             if (isTouching) {
                 balloon.targetX = touchX;
             }
+            // 贝塞尔曲线惯性：速度 = 速度*阻尼 + (目标-当前)*响应
             balloon.vx = balloon.vx * balloon.followDamping + (balloon.targetX - balloon.x) * balloon.followSmooth;
             balloon.x += balloon.vx;
             
-            // 边界限制 X
+            // 边界限制
             balloon.x = Math.max(balloon.radius + 10, Math.min(GAME_WIDTH - balloon.radius - 10, balloon.x));
-            // 边界限制 Y 防止飞出屏幕底部/顶部
+
+            // 垂直边界保护：防止气球飞出屏幕底部/顶部
             const minY = cameraY - 200;
             const maxY = cameraY + GAME_HEIGHT - 50;
             balloon.y = Math.max(minY, Math.min(maxY, balloon.y));
@@ -841,7 +849,7 @@
                     if (obs.type !== 'laser' || obs.active) {
                         takeDamage();
                         obs.active = false;
-                        createParticles(obs.x, obs.y - cameraY + 350, '#ff6348', 6);
+                        createParticles(obs.x, obs.y - cameraY, '#ff6348', 6);
                     }
                 }
                 
@@ -875,7 +883,7 @@
                     comboEl.classList.add('show');
                     setTimeout(() => comboEl.classList.remove('show'), 900);
                     
-                    createParticles(coin.x, coin.y - cameraY + 350, '#ffd700', 5);
+                    createParticles(coin.x, coin.y - cameraY, '#ffd700', 5);
                 }
                 
                 if (coin.y > cameraY + 900) {
@@ -962,7 +970,7 @@
             
             // 绘制云朵
             clouds.forEach(cloud => {
-                const cy = cloud.y - cameraY + 350;
+                const cy = cloud.y - cameraY;
                 ctx.fillStyle = `rgba(255, 255, 255, ${cloud.opacity})`;
                 ctx.beginPath();
                 ctx.ellipse(cloud.x, cy, cloud.width / 2, cloud.width / 6, 0, 0, Math.PI * 2);
@@ -977,7 +985,7 @@
                 const alpha = Math.max(0.1, Math.min(1, star.brightness));
                 ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
                 ctx.beginPath();
-                ctx.arc(star.x, star.y - cameraY + 350, star.size, 0, Math.PI * 2);
+                ctx.arc(star.x, star.y - cameraY, star.size, 0, Math.PI * 2);
                 ctx.fill();
             });
             
@@ -985,7 +993,7 @@
             coins.forEach(coin => {
                 if (coin.collected) return;
                 const bobY = Math.sin(coin.bob) * 3;
-                const cy = coin.y - cameraY + 350 + bobY;
+                const cy = coin.y - cameraY + bobY;
                 
                 ctx.fillStyle = `rgba(255, 215, 0, ${coin.glow * 0.12})`;
                 ctx.beginPath();
@@ -1013,7 +1021,7 @@
             obstacles.forEach(obs => {
                 if (!obs.active && obs.type !== 'laser') return;
                 
-                const sy = obs.y - cameraY + 350;
+                const sy = obs.y - cameraY;
                 
                 switch(obs.type) {
                     case 'spike':
@@ -1065,7 +1073,7 @@
                         
                     case 'missile':
                         obs.trail.forEach((t, i) => {
-                            const ty = t.y - cameraY + 350;
+                            const ty = t.y - cameraY;
                             ctx.fillStyle = `rgba(255, 100, 50, ${i / obs.trail.length * 0.35})`;
                             ctx.beginPath();
                             ctx.arc(t.x, ty, obs.radius * (i / obs.trail.length), 0, Math.PI * 2);
@@ -1126,10 +1134,12 @@
             });
             ctx.globalAlpha = 1;
             
-            // ========== 绘制气球（已删除虚假坐标修正） ==========
-            const balloonScreenY = balloon.y - cameraY + 350;
+            // ========== 绘制气球 ==========
+            const balloonScreenY = balloon.y - cameraY;
             const wobble = Math.sin(balloon.wobblePhase) * balloon.wobbleAmount;
+            
             let drawY = balloonScreenY;
+
             
             if (balloon.invincible > 0 && Math.floor(balloon.invincible / 8) % 2 === 0) {
                 ctx.globalAlpha = 0.35;
@@ -1206,26 +1216,14 @@
             ctx.restore();
         }
         
-        // ========== 输入处理（修复触摸坐标） ==========
-        function getEventPos(e) {
-            const rect = canvas.getBoundingClientRect();
-            if (e.touches && e.touches.length > 0) {
-                return {
-                    x: e.touches[0].clientX - rect.left,
-                    y: e.touches[0].clientY - rect.top
-                };
-            } else if (e.changedTouches && e.changedTouches.length > 0) {
-                return {
-                    x: e.changedTouches[0].clientX - rect.left,
-                    y: e.changedTouches[0].clientY - rect.top
-                };
-            }
-            return { 
-                x: e.clientX - rect.left, 
-                y: e.clientY - rect.top 
-            };
+        // ========== 游戏循环 ==========
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
         }
-
+        
+        // ========== 输入处理（第一版手感：直接跟手）==========
         function handleStart(e) {
             if (gameState !== 'playing') return;
             e.preventDefault();
@@ -1234,6 +1232,7 @@
 
             const pos = getEventPos(e);
             touchX = screenToGameX(pos.x);
+            // 触摸开始直接同步目标位置，杜绝瞬间偏移
             balloon.targetX = touchX;
         }
 
@@ -1248,8 +1247,30 @@
 
         function handleEnd(e) {
             e.preventDefault();
+            // 强制重置状态，防止卡死
             isPressing = false;
             isTouching = false;
+        }
+        
+        function getEventPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            if (e.touches && e.touches.length > 0) {
+                // 移动端触摸：标准视口坐标
+                return {
+                    x: e.touches[0].clientX - rect.left,
+                    y: e.touches[0].clientY - rect.top
+                };
+            } else if (e.changedTouches && e.changedTouches.length > 0) {
+                return {
+                    x: e.changedTouches[0].clientX - rect.left,
+                    y: e.changedTouches[0].clientY - rect.top
+                };
+            }
+            // 鼠标
+            return { 
+                x: e.clientX - rect.left, 
+                y: e.clientY - rect.top 
+            };
         }
         
         canvas.addEventListener('mousedown', handleStart);
@@ -1282,4 +1303,16 @@
         });
         
         document.getElementById('restartBtn').addEventListener('click', restartGame);
-       
+        document.getElementById('restartBtn').addEventListener('touchend', (e) => {
+            e.preventDefault();
+            restartGame();
+        });
+        
+        // 初始化
+        initStars();
+        initClouds();
+        resizeCanvas();
+        gameLoop();
+    </script>
+</body>
+</html>
