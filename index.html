@@ -1,5 +1,4 @@
-
-html_content = '''<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -293,7 +292,7 @@ html_content = '''<!DOCTYPE html>
             <div id="combo"></div>
             
             <div class="tutorial-hint" id="tutorialHint" style="display:none">
-                按住上升 · 松手下降 · 风向会推动气球
+                按住上升 · 松手下降 · 左右滑动控制位置
             </div>
         </div>
         
@@ -304,7 +303,7 @@ html_content = '''<!DOCTYPE html>
             <div class="hint">
                 🎈 按住屏幕 = 气球上升<br>
                 ✋ 松开屏幕 = 气球缓慢下降<br>
-                🌬️ 风向会推动气球左右漂移<br>
+                👆 左右滑动 = 直接控制气球位置<br>
                 ⚡ 越飞越高，速度会越来越快<br>
                 ❤️ 碰到障碍损失生命，共3条命
             </div>
@@ -316,7 +315,7 @@ html_content = '''<!DOCTYPE html>
             <button class="btn" id="restartBtn">再来一次</button>
             <div class="hint" style="margin-top:30px">
                 💀 气球坠落了！<br>
-                注意风向变化，灵活躲避障碍
+                注意躲避障碍
             </div>
         </div>
     </div>
@@ -364,36 +363,29 @@ html_content = '''<!DOCTYPE html>
         let gameState = 'menu';
         let isPressing = false;
         let score = 0;
-        let bestScore = localStorage.getItem('timeBalloonBest5') || 0;
+        let bestScore = localStorage.getItem('timeBalloonBest6') || 0;
         let combo = 0;
         let comboTimer = 0;
         
-        // ========== 气球属性（带惯性的物理系统）==========
+        // ========== 气球属性（第一版手感：直接跟手）==========
         const balloon = {
             x: 200,
             y: 450,
-            vx: 0,
-            vy: 0,
             radius: 22,
             
-            // 跟手性参数 - 响应快但有惯性
-            followSpeed: 0.18,
-            followResponse: 0.35,
+            // 垂直运动
+            riseBaseSpeed: 1.0,
+            riseSpeed: 1.0,
+            fallSpeed: 0.4,
             
-            // 惯性阻尼
-            friction: 0.94,
-            verticalFriction: 0.92,
+            // 水平：直接跟手，无惯性漂移
+            targetX: 200,
+            followSpeed: 0.25,
             
             // 动画
             wobblePhase: 0,
             wobbleSpeed: 0.03,
-            wobbleAmount: 2.5,
-            
-            // 物理 - 速度提升
-            riseBaseSpeed: 1.2,
-            riseSpeed: 1.2,
-            fallSpeed: 0.5,
-            horizontalSpeed: 6,
+            wobbleAmount: 2,
             
             // 视觉
             glow: 0,
@@ -408,22 +400,20 @@ html_content = '''<!DOCTYPE html>
         let height = 0;
         let maxHeight = 0;
         let speedMultiplier = 1;
-        let windMultiplier = 1;
         
-        function updateSpeedAndWind() {
+        function updateSpeed() {
             const segments = Math.floor(height / 100);
             speedMultiplier = 1 + segments * 0.15;
-            windMultiplier = 1 + segments * 0.12;
             balloon.riseSpeed = balloon.riseBaseSpeed * speedMultiplier;
         }
         
-        // ========== 风向系统 ==========
+        // ========== 风向系统（只影响障碍移动，不影响气球）==========
         const wind = {
             current: 0,
             target: 0,
             changeTimer: 0,
-            changeInterval: 200,
-            maxStrength: 2.0,
+            changeInterval: 240,
+            maxStrength: 1.5,
             smooth: 0.02
         };
         
@@ -439,9 +429,9 @@ html_content = '''<!DOCTYPE html>
         function getWindDescription(strength) {
             const abs = Math.abs(strength);
             if (abs < 0.2) return '无风';
-            if (abs < 0.8) return '微风';
-            if (abs < 1.3) return '和风';
-            if (abs < 1.8) return '强风';
+            if (abs < 0.6) return '微风';
+            if (abs < 1.0) return '和风';
+            if (abs < 1.5) return '强风';
             return '狂风';
         }
         
@@ -466,6 +456,10 @@ html_content = '''<!DOCTYPE html>
         let clouds = [];
         let spawnTimer = 0;
         let difficulty = 1;
+        
+        // 触摸位置（游戏坐标）
+        let touchX = 200;
+        let isTouching = false;
         
         // ========== 初始化 ==========
         function initStars() {
@@ -628,8 +622,7 @@ html_content = '''<!DOCTYPE html>
         function resetGame() {
             balloon.x = 200;
             balloon.y = 450;
-            balloon.vx = 0;
-            balloon.vy = 0;
+            balloon.targetX = 200;
             balloon.glow = 0;
             balloon.scale = 1;
             balloon.targetScale = 1;
@@ -641,7 +634,6 @@ html_content = '''<!DOCTYPE html>
             height = 0;
             maxHeight = 0;
             speedMultiplier = 1;
-            windMultiplier = 1;
             
             score = 0;
             combo = 0;
@@ -653,6 +645,9 @@ html_content = '''<!DOCTYPE html>
             wind.current = 0;
             wind.target = 0;
             wind.changeTimer = 0;
+            
+            touchX = 200;
+            isTouching = false;
             
             obstacles = [];
             particles = [];
@@ -719,7 +714,7 @@ html_content = '''<!DOCTYPE html>
             gameState = 'gameover';
             if (score > bestScore) {
                 bestScore = score;
-                localStorage.setItem('timeBalloonBest5', bestScore);
+                localStorage.setItem('timeBalloonBest6', bestScore);
             }
             document.getElementById('finalScore').textContent = Math.floor(score);
             document.getElementById('bestScore').textContent = Math.floor(bestScore);
@@ -734,51 +729,33 @@ html_content = '''<!DOCTYPE html>
             difficulty = 1 + height / 600;
             
             updateWind();
-            updateSpeedAndWind();
+            updateSpeed();
             
             balloon.wobblePhase += balloon.wobbleSpeed;
             
-            // ===== 垂直运动（带惯性的物理）=====
+            // ===== 垂直运动：简单直接 =====
             if (isPressing) {
-                // 按住时加速上升，有惯性累积
-                balloon.vy -= balloon.riseSpeed * 0.15;
-                balloon.vy = Math.max(balloon.vy, -balloon.riseSpeed * 2.5);
+                balloon.y -= balloon.riseSpeed;
                 balloon.glow = Math.min(balloon.glow + 0.06, 1);
-                balloon.targetScale = Math.min(balloon.targetScale + 0.004, 1.12);
+                balloon.targetScale = Math.min(balloon.targetScale + 0.004, 1.1);
                 
-                if (Math.random() < 0.3) {
+                if (Math.random() < 0.25) {
                     createTrail(balloon.x, balloon.y + balloon.radius, 'rgba(0, 212, 255, 0.35)');
                 }
             } else {
-                // 松手时减速，有惯性滑翔
-                balloon.vy += balloon.fallSpeed * 0.08;
-                balloon.vy = Math.min(balloon.vy, balloon.fallSpeed * 1.5);
+                balloon.y += balloon.fallSpeed;
                 balloon.glow = Math.max(balloon.glow - 0.08, 0);
                 balloon.targetScale = Math.max(balloon.targetScale - 0.006, 0.95);
             }
             
-            // 应用垂直惯性阻尼
-            balloon.vy *= balloon.verticalFriction;
-            balloon.y += balloon.vy;
-            
-            // ===== 水平运动（跟手 + 惯性）=====
-            // 风向影响随高度提升
-            const effectiveWind = wind.current * windMultiplier;
-            balloon.vx += effectiveWind * 0.08;
-            
-            // 边界反弹
-            if (balloon.x < balloon.radius + 15) {
-                balloon.vx += 0.5;
-                balloon.x = balloon.radius + 15;
-            }
-            if (balloon.x > GAME_WIDTH - balloon.radius - 15) {
-                balloon.vx -= 0.5;
-                balloon.x = GAME_WIDTH - balloon.radius - 15;
+            // ===== 水平运动：直接跟手，无惯性 =====
+            if (isTouching) {
+                const dx = touchX - balloon.x;
+                balloon.x += dx * balloon.followSpeed;
             }
             
-            // 应用水平惯性阻尼
-            balloon.vx *= balloon.friction;
-            balloon.x += balloon.vx;
+            // 边界限制
+            balloon.x = Math.max(balloon.radius + 10, Math.min(GAME_WIDTH - balloon.radius - 10, balloon.x));
             
             // 缩放动画
             balloon.scale += (balloon.targetScale - balloon.scale) * 0.1;
@@ -920,7 +897,7 @@ html_content = '''<!DOCTYPE html>
             });
             
             clouds.forEach(cloud => {
-                cloud.x += wind.current * 0.25 * windMultiplier;
+                cloud.x += wind.current * 0.2;
                 const moveSpeed = isPressing ? cloud.speed * speedMultiplier : cloud.speed * 0.2;
                 cloud.y += moveSpeed;
                 
@@ -947,11 +924,11 @@ html_content = '''<!DOCTYPE html>
                 windArrow.style.opacity = '0.3';
             } else if (wind.current > 0) {
                 windArrow.textContent = '➡';
-                windArrow.style.opacity = Math.min(1, windStrength / 1.5);
+                windArrow.style.opacity = Math.min(1, windStrength / 1.2);
                 windArrow.style.color = '#74b9ff';
             } else {
                 windArrow.textContent = '⬅';
-                windArrow.style.opacity = Math.min(1, windStrength / 1.5);
+                windArrow.style.opacity = Math.min(1, windStrength / 1.2);
                 windArrow.style.color = '#74b9ff';
             }
             
@@ -1143,7 +1120,6 @@ html_content = '''<!DOCTYPE html>
             const balloonScreenY = balloon.y - cameraY + 350;
             const wobble = Math.sin(balloon.wobblePhase) * balloon.wobbleAmount;
             
-            // 安全边界
             let drawY = balloonScreenY;
             if (drawY < -50 || drawY > GAME_HEIGHT + 50) {
                 drawY = BALLOON_SCREEN_Y;
@@ -1170,11 +1146,11 @@ html_content = '''<!DOCTYPE html>
             ctx.fillStyle = gradient;
             ctx.beginPath();
             ctx.ellipse(
-                balloon.x + wobble * 0.25, 
+                balloon.x + wobble * 0.2, 
                 drawY, 
                 balloon.radius * bs, 
-                balloon.radius * 1.12 * bs, 
-                wobble * 0.015, 
+                balloon.radius * 1.1 * bs, 
+                wobble * 0.01, 
                 0, 
                 Math.PI * 2
             );
@@ -1185,11 +1161,11 @@ html_content = '''<!DOCTYPE html>
             ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
             ctx.beginPath();
             ctx.ellipse(
-                balloon.x - 5 + wobble * 0.15, 
+                balloon.x - 5 + wobble * 0.1, 
                 drawY - 7, 
                 5 * bs, 
                 7 * bs, 
-                -0.25, 
+                -0.2, 
                 0, 
                 Math.PI * 2
             );
@@ -1199,19 +1175,19 @@ html_content = '''<!DOCTYPE html>
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
             ctx.lineWidth = 1.5;
             ctx.beginPath();
-            ctx.moveTo(balloon.x + wobble * 0.25, drawY + balloon.radius * 1.08 * bs);
+            ctx.moveTo(balloon.x + wobble * 0.2, drawY + balloon.radius * 1.05 * bs);
             
-            const ropeSwing = Math.sin(Date.now() * 0.0025) * 6 + wind.current * 2.5;
+            const ropeSwing = Math.sin(Date.now() * 0.002) * 4;
             ctx.bezierCurveTo(
-                balloon.x + ropeSwing, drawY + balloon.radius * 1.25 * bs,
-                balloon.x + ropeSwing * 0.4, drawY + balloon.radius * 1.45 * bs,
-                balloon.x, drawY + balloon.radius * 1.55 * bs + 12
+                balloon.x + ropeSwing, drawY + balloon.radius * 1.2 * bs,
+                balloon.x + ropeSwing * 0.3, drawY + balloon.radius * 1.4 * bs,
+                balloon.x, drawY + balloon.radius * 1.5 * bs + 10
             );
             ctx.stroke();
             
             // 小篮子
             ctx.fillStyle = 'rgba(180, 140, 90, 0.55)';
-            ctx.fillRect(balloon.x - 5, drawY + balloon.radius * 1.55 * bs + 12, 10, 7);
+            ctx.fillRect(balloon.x - 5, drawY + balloon.radius * 1.5 * bs + 10, 10, 7);
             
             ctx.globalAlpha = 1;
             
@@ -1231,7 +1207,33 @@ html_content = '''<!DOCTYPE html>
             requestAnimationFrame(gameLoop);
         }
         
-        // ========== 输入处理 ==========
+        // ========== 输入处理（第一版手感：直接跟手）==========
+        function handleStart(e) {
+            if (gameState !== 'playing') return;
+            e.preventDefault();
+            isPressing = true;
+            isTouching = true;
+            
+            const pos = getEventPos(e);
+            const gamePos = screenToGame(pos.x, pos.y);
+            touchX = gamePos.x;
+        }
+        
+        function handleMove(e) {
+            if (!isTouching || gameState !== 'playing') return;
+            e.preventDefault();
+            
+            const pos = getEventPos(e);
+            const gamePos = screenToGame(pos.x, pos.y);
+            touchX = gamePos.x;
+        }
+        
+        function handleEnd(e) {
+            e.preventDefault();
+            isPressing = false;
+            isTouching = false;
+        }
+        
         function getEventPos(e) {
             if (e.touches && e.touches.length > 0) {
                 const rect = canvas.getBoundingClientRect();
@@ -1243,22 +1245,13 @@ html_content = '''<!DOCTYPE html>
             return { x: e.offsetX, y: e.offsetY };
         }
         
-        function handleStart(e) {
-            if (gameState !== 'playing') return;
-            e.preventDefault();
-            isPressing = true;
-        }
-        
-        function handleEnd(e) {
-            e.preventDefault();
-            isPressing = false;
-        }
-        
         canvas.addEventListener('mousedown', handleStart);
+        canvas.addEventListener('mousemove', handleMove);
         canvas.addEventListener('mouseup', handleEnd);
         canvas.addEventListener('mouseleave', handleEnd);
         
         canvas.addEventListener('touchstart', handleStart, {passive: false});
+        canvas.addEventListener('touchmove', handleMove, {passive: false});
         canvas.addEventListener('touchend', handleEnd, {passive: false});
         canvas.addEventListener('touchcancel', handleEnd, {passive: false});
         
@@ -1294,9 +1287,4 @@ html_content = '''<!DOCTYPE html>
         gameLoop();
     </script>
 </body>
-</html>'''
-
-with open('/mnt/agents/output/time_balloon_demo.html', 'w', encoding='utf-8') as f:
-    f.write(html_content)
-
-print("✅ 已更新手感优化版本！")
+</html>
