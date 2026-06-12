@@ -1,4 +1,5 @@
-<!DOCTYPE html>
+
+html_content = '''<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -53,89 +54,97 @@
             left: 15px;
             display: flex;
             align-items: center;
-            gap: 8px;
-            color: rgba(255,255,255,0.8);
-            font-size: clamp(12px, 3.5vw, 15px);
-            font-weight: bold;
+            gap: 6px;
         }
         
         #windArrow {
-            font-size: 20px;
-            transition: transform 0.5s ease;
+            font-size: 28px;
+            transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
             display: inline-block;
+            filter: drop-shadow(0 0 8px rgba(100, 200, 255, 0.4));
+        }
+        
+        #windText {
+            color: rgba(255,255,255,0.7);
+            font-size: clamp(11px, 3vw, 13px);
+            font-weight: bold;
         }
         
         #windLabel {
-            font-size: 10px;
-            color: rgba(255,255,255,0.5);
+            font-size: 9px;
+            color: rgba(255,255,255,0.4);
         }
         
         #speedDisplay {
             position: absolute;
             top: max(12px, env(safe-area-inset-top));
             right: 15px;
+            text-align: right;
+        }
+        
+        #speedValue {
             color: #00d4ff;
-            font-size: clamp(14px, 4vw, 18px);
+            font-size: clamp(16px, 4.5vw, 20px);
             font-weight: bold;
             text-shadow: 0 0 10px rgba(0,212,255,0.4);
         }
         
         #speedLabel {
-            font-size: 10px;
+            font-size: 9px;
             color: rgba(255,255,255,0.4);
-            text-align: right;
         }
         
         #healthBar {
             position: absolute;
-            top: max(45px, calc(env(safe-area-inset-top) + 30px));
+            top: max(50px, calc(env(safe-area-inset-top) + 35px));
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            gap: 8px;
+            gap: 10px;
         }
         
         .heart {
-            font-size: clamp(20px, 5.5vw, 26px);
-            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            filter: drop-shadow(0 0 8px rgba(255, 100, 100, 0.5));
+            font-size: clamp(22px, 6vw, 28px);
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            filter: drop-shadow(0 0 6px rgba(255, 80, 80, 0.4));
         }
         
         .heart.lost {
-            opacity: 0.2;
-            transform: scale(0.6);
+            opacity: 0.15;
+            transform: scale(0.5) rotate(20deg);
             filter: grayscale(1);
         }
         
         .heart.hit {
-            animation: heartHit 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            animation: heartHit 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
         }
         
         @keyframes heartHit {
             0% { transform: scale(1); }
-            30% { transform: scale(1.4); }
-            60% { transform: scale(0.8); }
+            25% { transform: scale(1.5); }
+            50% { transform: scale(0.7); }
+            75% { transform: scale(1.2); }
             100% { transform: scale(1); }
         }
         
         #score {
             position: absolute;
-            top: max(80px, calc(env(safe-area-inset-top) + 65px));
+            top: max(90px, calc(env(safe-area-inset-top) + 75px));
             left: 50%;
             transform: translateX(-50%);
             color: #ffd700;
-            font-size: clamp(18px, 5vw, 24px);
+            font-size: clamp(20px, 5.5vw, 26px);
             font-weight: bold;
-            text-shadow: 0 0 10px rgba(255,215,0,0.4);
-            letter-spacing: 2px;
+            text-shadow: 0 0 12px rgba(255,215,0,0.35);
+            letter-spacing: 3px;
         }
         
         #heightDisplay {
             position: absolute;
-            top: max(110px, calc(env(safe-area-inset-top) + 95px));
+            top: max(120px, calc(env(safe-area-inset-top) + 105px));
             left: 50%;
             transform: translateX(-50%);
-            color: rgba(255,255,255,0.5);
+            color: rgba(255,255,255,0.45);
             font-size: clamp(11px, 3vw, 13px);
         }
         
@@ -160,18 +169,19 @@
         }
         
         .title {
-            font-size: clamp(32px, 9vw, 48px);
+            font-size: clamp(36px, 10vw, 52px);
             color: #00d4ff;
-            text-shadow: 0 0 20px rgba(0,212,255,0.5);
+            text-shadow: 0 0 25px rgba(0,212,255,0.45);
             margin-bottom: 8px;
-            letter-spacing: 4px;
+            letter-spacing: 5px;
             text-align: center;
         }
         
         .subtitle {
-            color: rgba(255,255,255,0.5);
-            font-size: clamp(12px, 3.5vw, 16px);
-            margin-bottom: 50px;
+            color: rgba(255,255,255,0.45);
+            font-size: clamp(13px, 3.5vw, 17px);
+            margin-bottom: 55px;
+            letter-spacing: 2px;
         }
         
         .btn {
@@ -180,85 +190,76 @@
             border: none;
             border-radius: 30px;
             color: white;
-            font-size: clamp(16px, 5vw, 20px);
+            font-size: clamp(17px, 5vw, 21px);
             font-weight: bold;
             cursor: pointer;
             pointer-events: all;
-            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s;
-            box-shadow: 0 4px 20px rgba(0,212,255,0.3);
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s;
+            box-shadow: 0 4px 25px rgba(0,212,255,0.25);
             -webkit-tap-highlight-color: transparent;
         }
         
         .btn:active {
-            transform: scale(0.95);
+            transform: scale(0.93);
         }
         
         .hint {
-            margin-top: 40px;
-            color: rgba(255,255,255,0.45);
+            margin-top: 45px;
+            color: rgba(255,255,255,0.4);
             font-size: clamp(11px, 3vw, 13px);
             text-align: center;
-            line-height: 2.2;
-            max-width: 320px;
+            line-height: 2.3;
+            max-width: 300px;
         }
         
         .finalScore {
-            font-size: clamp(40px, 12vw, 56px);
+            font-size: clamp(44px, 13vw, 60px);
             color: #ffd700;
-            text-shadow: 0 0 20px rgba(255,215,0,0.5);
+            text-shadow: 0 0 25px rgba(255,215,0,0.4);
             margin-bottom: 8px;
         }
         
         .bestScore {
-            color: rgba(255,255,255,0.5);
-            font-size: clamp(12px, 3.5vw, 16px);
+            color: rgba(255,255,255,0.45);
+            font-size: clamp(13px, 3.5vw, 16px);
             margin-bottom: 40px;
         }
         
         .tutorial-hint {
             position: absolute;
-            bottom: max(40px, env(safe-area-inset-bottom));
+            bottom: max(45px, env(safe-area-inset-bottom));
             left: 50%;
             transform: translateX(-50%);
-            color: rgba(255,255,255,0.25);
+            color: rgba(255,255,255,0.2);
             font-size: 12px;
             text-align: center;
-            animation: pulse 2.5s infinite;
+            animation: pulse 3s infinite;
             white-space: nowrap;
         }
         
         @keyframes pulse {
-            0%, 100% { opacity: 0.25; }
-            50% { opacity: 0.6; }
-        }
-        
-        .invincible-flash {
-            animation: invincibleFlash 0.15s alternate 6;
-        }
-        
-        @keyframes invincibleFlash {
-            from { opacity: 1; }
-            to { opacity: 0.3; }
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 0.5; }
         }
         
         #combo {
             position: absolute;
-            top: 50%;
+            top: 45%;
             left: 50%;
             transform: translate(-50%, -50%);
             color: #ff6b6b;
-            font-size: clamp(24px, 7vw, 36px);
+            font-size: clamp(28px, 8vw, 40px);
             font-weight: bold;
             opacity: 0;
-            transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            text-shadow: 0 0 15px rgba(255,107,107,0.6);
+            transition: opacity 0.3s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            text-shadow: 0 0 18px rgba(255,107,107,0.5);
             pointer-events: none;
             z-index: 5;
         }
         
         #combo.show {
             opacity: 1;
-            transform: translate(-50%, -60%);
+            transform: translate(-50%, -60%) scale(1.1);
         }
     </style>
 </head>
@@ -270,13 +271,13 @@
             <div id="windIndicator">
                 <span id="windArrow">➡</span>
                 <div>
-                    <div id="windValue">0.0</div>
+                    <div id="windText">微风</div>
                     <div id="windLabel">风向</div>
                 </div>
             </div>
             
             <div id="speedDisplay">
-                <div id="speedValue">2.0</div>
+                <div id="speedValue">0.9</div>
                 <div id="speedLabel">m/s</div>
             </div>
             
@@ -324,7 +325,7 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         
-        // 响应式画布
+        // ========== 响应式画布 ==========
         let GAME_WIDTH = 400;
         let GAME_HEIGHT = 700;
         let scale = 1;
@@ -363,41 +364,41 @@
         let gameState = 'menu';
         let isPressing = false;
         let score = 0;
-        let bestScore = localStorage.getItem('timeBalloonBest2') || 0;
+        let bestScore = localStorage.getItem('timeBalloonBest3') || 0;
         let combo = 0;
         let comboTimer = 0;
         
-        // ========== 气球属性（贝塞尔曲线动画） ==========
+        // ========== 气球属性 ==========
         const balloon = {
             x: 200,
-            y: 500,
+            y: 400,
             targetX: 200,
-            targetY: 500,
+            targetY: 400,
             vx: 0,
             vy: 0,
             radius: 22,
             
-            // 贝塞尔插值参数
-            smoothX: 0.12,
-            smoothY: 0.08,
+            // 平滑参数
+            smoothX: 0.08,
+            smoothY: 0.06,
             
-            // 动画状态
+            // 动画
             wobblePhase: 0,
-            wobbleSpeed: 0.03,
-            wobbleAmount: 3,
+            wobbleSpeed: 0.025,
+            wobbleAmount: 2.5,
             
-            // 物理
-            riseBaseSpeed: 1.8,
-            riseSpeed: 1.8,
-            fallSpeed: 1.2,
-            horizontalSpeed: 4,
+            // 物理 - 速度减半
+            riseBaseSpeed: 0.9,
+            riseSpeed: 0.9,
+            fallSpeed: 0.6,
+            horizontalSpeed: 3,
             
             // 视觉
             glow: 0,
             scale: 1,
             targetScale: 1,
             
-            // 无敌时间
+            // 无敌
             invincible: 0
         };
         
@@ -408,7 +409,7 @@
         
         function updateSpeed() {
             const segments = Math.floor(height / 100);
-            speedMultiplier = 1 + segments * 0.15;
+            speedMultiplier = 1 + segments * 0.12;
             balloon.riseSpeed = balloon.riseBaseSpeed * speedMultiplier;
         }
         
@@ -417,9 +418,9 @@
             current: 0,
             target: 0,
             changeTimer: 0,
-            changeInterval: 180,
-            maxStrength: 2.5,
-            smooth: 0.02
+            changeInterval: 240,
+            maxStrength: 1.8,
+            smooth: 0.015
         };
         
         function updateWind() {
@@ -428,27 +429,31 @@
                 wind.changeTimer = 0;
                 wind.target = (Math.random() - 0.5) * 2 * wind.maxStrength;
             }
-            
-            // 贝塞尔缓动
             wind.current += (wind.target - wind.current) * wind.smooth;
         }
         
-        function getWindArrow(degree) {
-            const arrows = ['⬅', '↖', '⬆', '↗', '➡', '↘', '⬇', '↙'];
-            const idx = Math.round((degree + 180) / 45) % 8;
-            return arrows[idx] || '➡';
+        function getWindDescription(strength) {
+            const abs = Math.abs(strength);
+            if (abs < 0.3) return '无风';
+            if (abs < 0.8) return '微风';
+            if (abs < 1.3) return '和风';
+            if (abs < 1.8) return '强风';
+            return '狂风';
         }
         
-        // ========== 摄像机 ==========
+        // ========== 摄像机（气球不固定，有轻微跟随） ==========
         let cameraY = 0;
-        let cameraSmooth = 0.06;
         let cameraTargetY = 0;
+        let cameraSmooth = 0.04;
+        
+        // 气球在屏幕中的目标位置（偏下一点，留出上方视野）
+        const BALLOON_SCREEN_TARGET_Y = 420;
         
         // ========== 生命系统 ==========
         let lives = 3;
         let maxLives = 3;
         let invincibleTime = 0;
-        const INVINCIBLE_DURATION = 120;
+        const INVINCIBLE_DURATION = 150;
         
         // ========== 游戏对象 ==========
         let obstacles = [];
@@ -462,27 +467,27 @@
         // ========== 初始化 ==========
         function initStars() {
             stars = [];
-            for (let i = 0; i < 80; i++) {
+            for (let i = 0; i < 100; i++) {
                 stars.push({
                     x: Math.random() * GAME_WIDTH,
-                    y: Math.random() * 3000 - 1500,
+                    y: Math.random() * 4000 - 2000,
                     size: Math.random() * 2 + 0.5,
                     brightness: Math.random(),
-                    speed: Math.random() * 0.3 + 0.1,
-                    twinkleSpeed: Math.random() * 0.02 + 0.01
+                    speed: Math.random() * 0.2 + 0.05,
+                    twinkleSpeed: Math.random() * 0.015 + 0.005
                 });
             }
         }
         
         function initClouds() {
             clouds = [];
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 8; i++) {
                 clouds.push({
                     x: Math.random() * GAME_WIDTH,
-                    y: Math.random() * 2000 - 1000,
-                    width: 80 + Math.random() * 60,
-                    speed: 0.2 + Math.random() * 0.3,
-                    opacity: 0.05 + Math.random() * 0.08
+                    y: Math.random() * 3000 - 1500,
+                    width: 70 + Math.random() * 80,
+                    speed: 0.15 + Math.random() * 0.25,
+                    opacity: 0.04 + Math.random() * 0.08
                 });
             }
         }
@@ -494,45 +499,45 @@
             
             let obs = {
                 type: type,
-                y: cameraY - 100 - Math.random() * 50,
+                y: cameraY - 80 - Math.random() * 60,
                 active: true,
                 passed: false
             };
             
             switch(type) {
                 case 'spike':
-                    obs.x = 50 + Math.random() * 300;
-                    obs.width = 35;
-                    obs.height = 35;
+                    obs.x = 40 + Math.random() * 320;
+                    obs.width = 32;
+                    obs.height = 32;
                     break;
                 case 'saw':
-                    obs.x = 80 + Math.random() * 240;
-                    obs.radius = 22;
+                    obs.x = 70 + Math.random() * 260;
+                    obs.radius = 20;
                     obs.angle = 0;
                     obs.orbitX = obs.x;
-                    obs.orbitRadius = 50 + Math.random() * 40;
-                    obs.orbitSpeed = 0.015 + Math.random() * 0.02;
+                    obs.orbitRadius = 40 + Math.random() * 50;
+                    obs.orbitSpeed = 0.012 + Math.random() * 0.018;
                     break;
                 case 'laser':
                     obs.x = 0;
                     obs.width = GAME_WIDTH;
                     obs.height = 3;
                     obs.timer = 0;
-                    obs.interval = 100 + Math.random() * 60;
+                    obs.interval = 120 + Math.random() * 80;
                     break;
                 case 'missile':
-                    obs.x = 30 + Math.random() * 340;
-                    obs.y = cameraY - 80;
-                    obs.radius = 7;
+                    obs.x = 25 + Math.random() * 350;
+                    obs.y = cameraY - 60;
+                    obs.radius = 6;
                     obs.vx = 0;
-                    obs.vy = 1.5 + Math.random();
+                    obs.vy = 1.0 + Math.random() * 0.8;
                     obs.trail = [];
                     break;
                 case 'bird':
-                    obs.x = Math.random() < 0.5 ? -20 : GAME_WIDTH + 20;
-                    obs.y = cameraY - 100 - Math.random() * 200;
-                    obs.radius = 12;
-                    obs.vx = obs.x < 0 ? 1.5 + Math.random() : -1.5 - Math.random();
+                    obs.x = Math.random() < 0.5 ? -30 : GAME_WIDTH + 30;
+                    obs.y = cameraY - 80 - Math.random() * 250;
+                    obs.radius = 10;
+                    obs.vx = obs.x < 0 ? 1.0 + Math.random() * 0.8 : -1.0 - Math.random() * 0.8;
                     obs.vy = 0;
                     obs.wingPhase = Math.random() * Math.PI * 2;
                     break;
@@ -543,18 +548,18 @@
         
         function spawnCoins() {
             const pattern = Math.floor(Math.random() * 4);
-            const baseX = 80 + Math.random() * 240;
+            const baseX = 70 + Math.random() * 260;
             
             for (let i = 0; i < 5; i++) {
                 let x = baseX;
-                if (pattern === 1) x = 60 + i * 70;
-                if (pattern === 2) x = 200 + Math.sin(i * 0.8) * 100;
-                if (pattern === 3) x = 100 + (i % 2) * 200;
+                if (pattern === 1) x = 50 + i * 75;
+                if (pattern === 2) x = 200 + Math.sin(i * 0.8) * 90;
+                if (pattern === 3) x = 80 + (i % 2) * 240;
                 
                 coins.push({
-                    x: Math.max(25, Math.min(GAME_WIDTH - 25, x)),
-                    y: cameraY - 100 - i * 45,
-                    radius: 9,
+                    x: Math.max(20, Math.min(GAME_WIDTH - 20, x)),
+                    y: cameraY - 80 - i * 50,
+                    radius: 8,
                     collected: false,
                     bob: Math.random() * Math.PI * 2,
                     glow: 0
@@ -563,10 +568,10 @@
         }
         
         // ========== 粒子系统 ==========
-        function createParticles(x, y, color, count = 12, type = 'burst') {
+        function createParticles(x, y, color, count = 10) {
             for (let i = 0; i < count; i++) {
                 const angle = (Math.PI * 2 / count) * i + Math.random() * 0.5;
-                const speed = 2 + Math.random() * 4;
+                const speed = 1.5 + Math.random() * 3;
                 
                 particles.push({
                     x: x,
@@ -574,27 +579,25 @@
                     vx: Math.cos(angle) * speed,
                     vy: Math.sin(angle) * speed,
                     life: 1,
-                    decay: 0.015 + Math.random() * 0.02,
+                    decay: 0.012 + Math.random() * 0.015,
                     color: color,
-                    size: 2 + Math.random() * 4,
-                    type: type,
-                    gravity: 0.08
+                    size: 2 + Math.random() * 3,
+                    gravity: 0.06
                 });
             }
         }
         
         function createTrail(x, y, color) {
             particles.push({
-                x: x + (Math.random() - 0.5) * 8,
-                y: y + (Math.random() - 0.5) * 8,
-                vx: (Math.random() - 0.5) * 0.5,
-                vy: 1 + Math.random(),
-                life: 0.6,
-                decay: 0.03,
+                x: x + (Math.random() - 0.5) * 6,
+                y: y + (Math.random() - 0.5) * 6,
+                vx: (Math.random() - 0.5) * 0.3,
+                vy: 0.5 + Math.random() * 0.5,
+                life: 0.5,
+                decay: 0.025,
                 color: color,
-                size: 2 + Math.random() * 2,
-                type: 'trail',
-                gravity: 0.02
+                size: 1.5 + Math.random() * 1.5,
+                gravity: 0.01
             });
         }
         
@@ -605,7 +608,7 @@
             const dx = balloon.x - obj.x;
             const dy = (balloon.y - cameraY) - (obj.y - cameraY);
             const dist = Math.sqrt(dx * dx + dy * dy);
-            return dist < balloon.radius + (obj.radius || obj.width / 2 || 15);
+            return dist < balloon.radius + (obj.radius || obj.width / 2 || 12);
         }
         
         // ========== 游戏控制 ==========
@@ -614,16 +617,16 @@
             document.getElementById('tutorialHint').style.display = 'block';
             setTimeout(() => {
                 document.getElementById('tutorialHint').style.display = 'none';
-            }, 6000);
+            }, 7000);
             gameState = 'playing';
             resetGame();
         }
         
         function resetGame() {
             balloon.x = 200;
-            balloon.y = 500;
+            balloon.y = 400;
             balloon.targetX = 200;
-            balloon.targetY = 500;
+            balloon.targetY = 400;
             balloon.vx = 0;
             balloon.vy = 0;
             balloon.glow = 0;
@@ -658,13 +661,12 @@
             initStars();
             initClouds();
             
-            // 预生成
-            for (let i = 0; i < 4; i++) {
+            for (let i = 0; i < 3; i++) {
                 spawnObstacle();
-                obstacles[obstacles.length - 1].y = -150 - i * 180;
+                obstacles[obstacles.length - 1].y = -120 - i * 200;
             }
             spawnCoins();
-            coins.forEach(c => c.y = -120);
+            coins.forEach(c => c.y = -100);
             
             updateHearts();
         }
@@ -682,11 +684,10 @@
             invincibleTime = INVINCIBLE_DURATION;
             balloon.invincible = INVINCIBLE_DURATION;
             
-            // 受伤动画
-            balloon.targetScale = 0.8;
-            setTimeout(() => { balloon.targetScale = 1; }, 200);
+            balloon.targetScale = 0.75;
+            setTimeout(() => { balloon.targetScale = 1; }, 250);
             
-            createParticles(balloon.x, balloon.y - cameraY + 350, '#ff4757', 20);
+            createParticles(balloon.x, balloon.y - cameraY + 350, '#ff4757', 15);
             
             updateHearts();
             
@@ -704,7 +705,7 @@
                         setTimeout(() => {
                             heart.classList.remove('hit');
                             heart.classList.add('lost');
-                        }, 400);
+                        }, 500);
                     }
                 } else {
                     heart.classList.remove('lost', 'hit');
@@ -716,76 +717,65 @@
             gameState = 'gameover';
             if (score > bestScore) {
                 bestScore = score;
-                localStorage.setItem('timeBalloonBest2', bestScore);
+                localStorage.setItem('timeBalloonBest3', bestScore);
             }
             document.getElementById('finalScore').textContent = Math.floor(score);
             document.getElementById('bestScore').textContent = Math.floor(bestScore);
             document.getElementById('gameOverScreen').style.display = 'flex';
-            createParticles(balloon.x, balloon.y - cameraY + 350, '#ff4757', 30);
+            createParticles(balloon.x, balloon.y - cameraY + 350, '#ff4757', 25);
         }
         
         // ========== 主更新循环 ==========
         function update() {
             if (gameState !== 'playing') return;
             
-            // 更新难度
-            difficulty = 1 + height / 500;
+            difficulty = 1 + height / 600;
             
-            // 更新风向
             updateWind();
-            
-            // 更新速度
             updateSpeed();
             
-            // 气球物理（贝塞尔曲线平滑）
             balloon.wobblePhase += balloon.wobbleSpeed;
             
             if (isPressing) {
-                // 上升 - 使用缓动
                 balloon.targetY -= balloon.riseSpeed;
-                balloon.glow = Math.min(balloon.glow + 0.05, 1);
-                balloon.targetScale = Math.min(balloon.targetScale + 0.005, 1.15);
+                balloon.glow = Math.min(balloon.glow + 0.04, 1);
+                balloon.targetScale = Math.min(balloon.targetScale + 0.003, 1.1);
                 
-                // 产生上升尾迹
-                if (Math.random() < 0.3) {
-                    createTrail(balloon.x, balloon.y + balloon.radius, 'rgba(0, 212, 255, 0.4)');
+                if (Math.random() < 0.25) {
+                    createTrail(balloon.x, balloon.y + balloon.radius, 'rgba(0, 212, 255, 0.3)');
                 }
             } else {
-                // 下降
                 balloon.targetY += balloon.fallSpeed;
-                balloon.glow = Math.max(balloon.glow - 0.08, 0);
-                balloon.targetScale = Math.max(balloon.targetScale - 0.008, 0.95);
+                balloon.glow = Math.max(balloon.glow - 0.06, 0);
+                balloon.targetScale = Math.max(balloon.targetScale - 0.005, 0.95);
             }
             
-            // 贝塞尔平滑插值
+            // 平滑移动
             balloon.y += (balloon.targetY - balloon.y) * balloon.smoothY;
             
-            // 风向影响（平滑）
-            balloon.targetX += wind.current * 0.5;
-            balloon.targetX = Math.max(balloon.radius + 10, Math.min(GAME_WIDTH - balloon.radius - 10, balloon.targetX));
+            // 风向影响
+            balloon.targetX += wind.current * 0.4;
+            balloon.targetX = Math.max(balloon.radius + 15, Math.min(GAME_WIDTH - balloon.radius - 15, balloon.targetX));
             balloon.x += (balloon.targetX - balloon.x) * balloon.smoothX;
             
-            // 缩放动画平滑
-            balloon.scale += (balloon.targetScale - balloon.scale) * 0.1;
+            // 缩放动画
+            balloon.scale += (balloon.targetScale - balloon.scale) * 0.08;
             
-            // 更新高度
-            height = Math.max(0, -balloon.y + 500);
+            // 高度计算
+            height = Math.max(0, -balloon.y + 400);
             if (height > maxHeight) maxHeight = height;
             
-            // 摄像机跟随（贝塞尔平滑）
-            cameraTargetY = balloon.y - 350;
+            // 摄像机跟随（气球在屏幕偏下位置，有轻微滞后）
+            cameraTargetY = balloon.y - BALLOON_SCREEN_TARGET_Y;
             cameraY += (cameraTargetY - cameraY) * cameraSmooth;
             
-            // 分数
-            score += 0.05 * speedMultiplier;
+            score += 0.03 * speedMultiplier;
             
-            // 无敌时间
             if (invincibleTime > 0) {
                 invincibleTime--;
                 balloon.invincible--;
             }
             
-            // 连击
             if (comboTimer > 0) {
                 comboTimer--;
                 if (comboTimer <= 0) {
@@ -794,13 +784,12 @@
                 }
             }
             
-            // 生成
             spawnTimer++;
-            const spawnRate = Math.max(40, 80 - difficulty * 5);
+            const spawnRate = Math.max(50, 100 - difficulty * 4);
             if (spawnTimer > spawnRate) {
                 spawnTimer = 0;
                 spawnObstacle();
-                if (Math.random() < 0.25) spawnCoins();
+                if (Math.random() < 0.2) spawnCoins();
             }
             
             // 更新障碍
@@ -814,44 +803,42 @@
                         break;
                     case 'laser':
                         obs.timer++;
-                        obs.active = obs.timer % obs.interval < 25;
+                        obs.active = obs.timer % obs.interval < 20;
                         break;
                     case 'missile':
                         obs.trail.push({x: obs.x, y: obs.y});
-                        if (obs.trail.length > 8) obs.trail.shift();
+                        if (obs.trail.length > 6) obs.trail.shift();
                         
                         const mdx = balloon.x - obs.x;
                         const mdy = (balloon.y) - obs.y;
                         const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
                         if (mdist > 0) {
-                            obs.vx += (mdx / mdist) * 0.08;
-                            obs.vy += (mdy / mdist) * 0.08;
+                            obs.vx += (mdx / mdist) * 0.06;
+                            obs.vy += (mdy / mdist) * 0.06;
                         }
-                        obs.vx = Math.max(-2.5, Math.min(2.5, obs.vx));
-                        obs.vy = Math.max(-2, Math.min(2.5, obs.vy));
+                        obs.vx = Math.max(-2, Math.min(2, obs.vx));
+                        obs.vy = Math.max(-1.5, Math.min(2, obs.vy));
                         obs.x += obs.vx;
                         obs.y += obs.vy;
                         break;
                     case 'bird':
                         obs.x += obs.vx;
-                        obs.wingPhase += 0.15;
-                        obs.y += Math.sin(obs.wingPhase) * 0.5;
+                        obs.wingPhase += 0.12;
+                        obs.y += Math.sin(obs.wingPhase) * 0.4;
                         break;
                 }
                 
-                // 碰撞
                 if (checkCollision(balloon, obs)) {
                     if (obs.type !== 'laser' || obs.active) {
                         takeDamage();
                         obs.active = false;
-                        createParticles(obs.x, obs.y - cameraY + 350, '#ff6348', 8);
+                        createParticles(obs.x, obs.y - cameraY + 350, '#ff6348', 6);
                     }
                 }
                 
-                // 清理
-                if (obs.y > cameraY + 800 || obs.x < -50 || obs.x > GAME_WIDTH + 50) {
+                if (obs.y > cameraY + 900 || obs.x < -60 || obs.x > GAME_WIDTH + 60) {
                     if (!obs.passed && obs.y > balloon.y && obs.active) {
-                        score += 5;
+                        score += 3;
                     }
                     obstacles.splice(i, 1);
                 }
@@ -861,28 +848,28 @@
             coins.forEach((coin, i) => {
                 if (coin.collected) return;
                 
-                coin.bob += 0.04;
-                coin.glow = Math.sin(coin.bob) * 0.3 + 0.7;
+                coin.bob += 0.035;
+                coin.glow = Math.sin(coin.bob) * 0.25 + 0.75;
                 
                 const dx = balloon.x - coin.x;
                 const dy = (balloon.y - cameraY) - (coin.y - cameraY);
                 const dist = Math.sqrt(dx * dx + dy * dy);
                 
-                if (dist < balloon.radius + coin.radius + 5) {
+                if (dist < balloon.radius + coin.radius + 4) {
                     coin.collected = true;
                     score += 10;
                     combo++;
-                    comboTimer = 120;
+                    comboTimer = 150;
                     
                     const comboEl = document.getElementById('combo');
                     comboEl.textContent = combo + ' 连击!';
                     comboEl.classList.add('show');
-                    setTimeout(() => comboEl.classList.remove('show'), 800);
+                    setTimeout(() => comboEl.classList.remove('show'), 900);
                     
-                    createParticles(coin.x, coin.y - cameraY + 350, '#ffd700', 6);
+                    createParticles(coin.x, coin.y - cameraY + 350, '#ffd700', 5);
                 }
                 
-                if (coin.y > cameraY + 800) {
+                if (coin.y > cameraY + 900) {
                     coins.splice(i, 1);
                 }
             });
@@ -893,35 +880,32 @@
                 p.y += p.vy;
                 p.vy += p.gravity;
                 p.life -= p.decay;
-                p.vx *= 0.98;
+                p.vx *= 0.985;
                 
                 if (p.life <= 0) particles.splice(i, 1);
             });
             
-            // 更新背景
+            // 更新背景（相对移动感）
             stars.forEach(star => {
-                if (isPressing) {
-                    star.y += star.speed * speedMultiplier * 2;
-                } else {
-                    star.y += star.speed * 0.5;
-                }
-                star.brightness += Math.sin(Date.now() * star.twinkleSpeed) * 0.01;
+                const moveSpeed = isPressing ? star.speed * speedMultiplier * 1.5 : star.speed * 0.3;
+                star.y += moveSpeed;
+                star.brightness += Math.sin(Date.now() * star.twinkleSpeed) * 0.008;
                 
-                if (star.y > cameraY + 800) {
-                    star.y = cameraY - 200;
+                if (star.y > cameraY + 900) {
+                    star.y = cameraY - 300;
                     star.x = Math.random() * GAME_WIDTH;
                 }
             });
             
             clouds.forEach(cloud => {
-                cloud.x += wind.current * 0.3;
-                if (isPressing) cloud.y += cloud.speed * speedMultiplier;
-                else cloud.y += cloud.speed * 0.3;
+                cloud.x += wind.current * 0.25;
+                const moveSpeed = isPressing ? cloud.speed * speedMultiplier : cloud.speed * 0.2;
+                cloud.y += moveSpeed;
                 
-                if (cloud.x > GAME_WIDTH + 100) cloud.x = -100;
-                if (cloud.x < -100) cloud.x = GAME_WIDTH + 100;
-                if (cloud.y > cameraY + 800) {
-                    cloud.y = cameraY - 300;
+                if (cloud.x > GAME_WIDTH + 120) cloud.x = -120;
+                if (cloud.x < -120) cloud.x = GAME_WIDTH + 120;
+                if (cloud.y > cameraY + 900) {
+                    cloud.y = cameraY - 400;
                     cloud.x = Math.random() * GAME_WIDTH;
                 }
             });
@@ -930,23 +914,36 @@
             document.getElementById('score').textContent = Math.floor(score);
             document.getElementById('heightDisplay').textContent = '高度: ' + Math.floor(height) + 'm';
             document.getElementById('speedValue').textContent = balloon.riseSpeed.toFixed(1);
-            document.getElementById('windValue').textContent = Math.abs(wind.current).toFixed(1);
             
             const windArrow = document.getElementById('windArrow');
-            const windDeg = wind.current > 0 ? 90 : (wind.current < 0 ? -90 : 0);
+            const windDeg = wind.current > 0 ? 0 : 180;
             windArrow.style.transform = 'rotate(' + windDeg + 'deg)';
-            windArrow.textContent = wind.current > 0.3 ? '➡' : (wind.current < -0.3 ? '⬅' : '·');
+            
+            const windStrength = Math.abs(wind.current);
+            if (windStrength < 0.2) {
+                windArrow.textContent = '·';
+                windArrow.style.opacity = '0.3';
+            } else if (wind.current > 0) {
+                windArrow.textContent = '➡';
+                windArrow.style.opacity = Math.min(1, windStrength / 1.5);
+                windArrow.style.color = '#74b9ff';
+            } else {
+                windArrow.textContent = '⬅';
+                windArrow.style.opacity = Math.min(1, windStrength / 1.5);
+                windArrow.style.color = '#74b9ff';
+            }
+            
+            document.getElementById('windText').textContent = getWindDescription(wind.current);
         }
         
         // ========== 绘制 ==========
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // 背景渐变
             const bgGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-            bgGradient.addColorStop(0, '#0a0a1e');
-            bgGradient.addColorStop(0.5, '#121230');
-            bgGradient.addColorStop(1, '#0d1b2a');
+            bgGradient.addColorStop(0, '#08081a');
+            bgGradient.addColorStop(0.5, '#0f0f28');
+            bgGradient.addColorStop(1, '#0a1525');
             ctx.fillStyle = bgGradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
@@ -959,10 +956,10 @@
                 const cy = cloud.y - cameraY + 350;
                 ctx.fillStyle = `rgba(255, 255, 255, ${cloud.opacity})`;
                 ctx.beginPath();
-                ctx.ellipse(cloud.x, cy, cloud.width / 2, cloud.width / 5, 0, 0, Math.PI * 2);
+                ctx.ellipse(cloud.x, cy, cloud.width / 2, cloud.width / 6, 0, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.beginPath();
-                ctx.ellipse(cloud.x - cloud.width * 0.2, cy - 5, cloud.width / 3, cloud.width / 6, 0, 0, Math.PI * 2);
+                ctx.ellipse(cloud.x - cloud.width * 0.25, cy - 4, cloud.width / 3.5, cloud.width / 7, 0, 0, Math.PI * 2);
                 ctx.fill();
             });
             
@@ -978,33 +975,29 @@
             // 绘制金币
             coins.forEach(coin => {
                 if (coin.collected) return;
-                const bobY = Math.sin(coin.bob) * 4;
+                const bobY = Math.sin(coin.bob) * 3;
                 const cy = coin.y - cameraY + 350 + bobY;
                 
-                // 光晕
-                ctx.fillStyle = `rgba(255, 215, 0, ${coin.glow * 0.15})`;
+                ctx.fillStyle = `rgba(255, 215, 0, ${coin.glow * 0.12})`;
                 ctx.beginPath();
-                ctx.arc(coin.x, cy, coin.radius + 6, 0, Math.PI * 2);
+                ctx.arc(coin.x, cy, coin.radius + 5, 0, Math.PI * 2);
                 ctx.fill();
                 
-                // 金币
                 ctx.fillStyle = '#ffd700';
                 ctx.beginPath();
                 ctx.arc(coin.x, cy, coin.radius, 0, Math.PI * 2);
                 ctx.fill();
                 
-                // 高光
                 ctx.fillStyle = '#ffed4e';
                 ctx.beginPath();
-                ctx.arc(coin.x - 2, cy - 2, coin.radius * 0.4, 0, Math.PI * 2);
+                ctx.arc(coin.x - 1.5, cy - 1.5, coin.radius * 0.35, 0, Math.PI * 2);
                 ctx.fill();
                 
-                // 符号
                 ctx.fillStyle = '#b8860b';
-                ctx.font = 'bold 10px sans-serif';
+                ctx.font = 'bold 9px sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText('★', coin.x, cy + 1);
+                ctx.fillText('★', coin.x, cy + 0.5);
             });
             
             // 绘制障碍
@@ -1015,7 +1008,7 @@
                 
                 switch(obs.type) {
                     case 'spike':
-                        ctx.fillStyle = '#ff4757';
+                        ctx.fillStyle = '#e74c3c';
                         ctx.beginPath();
                         ctx.moveTo(obs.x, sy - obs.height / 2);
                         ctx.lineTo(obs.x - obs.width / 2, sy + obs.height / 2);
@@ -1023,8 +1016,8 @@
                         ctx.closePath();
                         ctx.fill();
                         
-                        ctx.strokeStyle = '#ff6b81';
-                        ctx.lineWidth = 2;
+                        ctx.strokeStyle = '#ff6b6b';
+                        ctx.lineWidth = 1.5;
                         ctx.stroke();
                         break;
                         
@@ -1033,29 +1026,29 @@
                         ctx.translate(obs.x, sy);
                         ctx.rotate(obs.angle * 3);
                         
-                        ctx.fillStyle = '#ff6348';
+                        ctx.fillStyle = '#e17055';
                         for (let i = 0; i < 8; i++) {
                             ctx.rotate(Math.PI / 4);
-                            ctx.fillRect(-3, -obs.radius, 6, obs.radius * 0.6);
+                            ctx.fillRect(-2.5, -obs.radius, 5, obs.radius * 0.55);
                         }
                         
                         ctx.beginPath();
-                        ctx.arc(0, 0, obs.radius * 0.35, 0, Math.PI * 2);
-                        ctx.fillStyle = '#2f3542';
+                        ctx.arc(0, 0, obs.radius * 0.3, 0, Math.PI * 2);
+                        ctx.fillStyle = '#2d3436';
                         ctx.fill();
                         
                         ctx.restore();
                         break;
                         
                     case 'laser':
-                        const isActive = obs.timer % obs.interval < 25;
+                        const isActive = obs.timer % obs.interval < 20;
                         if (isActive) {
                             ctx.shadowColor = '#ff3333';
-                            ctx.shadowBlur = 15;
-                            ctx.fillStyle = 'rgba(255, 50, 50, 0.9)';
+                            ctx.shadowBlur = 12;
+                            ctx.fillStyle = 'rgba(255, 60, 60, 0.85)';
                         } else {
                             ctx.shadowBlur = 0;
-                            ctx.fillStyle = 'rgba(255, 50, 50, 0.15)';
+                            ctx.fillStyle = 'rgba(255, 60, 60, 0.12)';
                         }
                         ctx.fillRect(obs.x, sy, obs.width, obs.height);
                         ctx.shadowBlur = 0;
@@ -1064,20 +1057,20 @@
                     case 'missile':
                         obs.trail.forEach((t, i) => {
                             const ty = t.y - cameraY + 350;
-                            ctx.fillStyle = `rgba(255, 100, 50, ${i / obs.trail.length * 0.4})`;
+                            ctx.fillStyle = `rgba(255, 100, 50, ${i / obs.trail.length * 0.35})`;
                             ctx.beginPath();
                             ctx.arc(t.x, ty, obs.radius * (i / obs.trail.length), 0, Math.PI * 2);
                             ctx.fill();
                         });
                         
-                        ctx.fillStyle = '#ff6348';
+                        ctx.fillStyle = '#e74c3c';
                         ctx.beginPath();
                         ctx.arc(obs.x, sy, obs.radius, 0, Math.PI * 2);
                         ctx.fill();
                         
-                        ctx.fillStyle = '#ffd700';
+                        ctx.fillStyle = '#f1c40f';
                         ctx.beginPath();
-                        ctx.arc(obs.x, sy, obs.radius * 0.35, 0, Math.PI * 2);
+                        ctx.arc(obs.x, sy, obs.radius * 0.3, 0, Math.PI * 2);
                         ctx.fill();
                         break;
                         
@@ -1087,27 +1080,25 @@
                         const facing = obs.vx > 0 ? 1 : -1;
                         ctx.scale(facing, 1);
                         
-                        const wingY = Math.sin(obs.wingPhase) * 6;
+                        const wingY = Math.sin(obs.wingPhase) * 5;
                         
-                        // 身体
                         ctx.fillStyle = '#74b9ff';
                         ctx.beginPath();
-                        ctx.ellipse(0, 0, 12, 7, 0, 0, Math.PI * 2);
+                        ctx.ellipse(0, 0, 10, 6, 0, 0, Math.PI * 2);
                         ctx.fill();
                         
-                        // 翅膀
                         ctx.fillStyle = '#a29bfe';
                         ctx.beginPath();
-                        ctx.moveTo(-5, -2);
-                        ctx.lineTo(5, -2 + wingY);
-                        ctx.lineTo(0, 5);
+                        ctx.moveTo(-4, -1.5);
+                        ctx.lineTo(4, -1.5 + wingY);
+                        ctx.lineTo(0, 4);
                         ctx.closePath();
                         ctx.fill();
                         
                         ctx.beginPath();
-                        ctx.moveTo(-5, 2);
-                        ctx.lineTo(5, 2 - wingY);
-                        ctx.lineTo(0, -5);
+                        ctx.moveTo(-4, 1.5);
+                        ctx.lineTo(4, 1.5 - wingY);
+                        ctx.lineTo(0, -4);
                         ctx.closePath();
                         ctx.fill();
                         
@@ -1130,35 +1121,32 @@
             const bsy = balloon.y - cameraY + 350;
             const wobble = Math.sin(balloon.wobblePhase) * balloon.wobbleAmount;
             
-            // 无敌闪烁
-            if (balloon.invincible > 0 && Math.floor(balloon.invincible / 6) % 2 === 0) {
-                ctx.globalAlpha = 0.4;
+            if (balloon.invincible > 0 && Math.floor(balloon.invincible / 8) % 2 === 0) {
+                ctx.globalAlpha = 0.35;
             }
             
-            // 光晕
             if (balloon.glow > 0) {
                 ctx.shadowColor = '#00d4ff';
-                ctx.shadowBlur = 15 + balloon.glow * 20;
+                ctx.shadowBlur = 12 + balloon.glow * 18;
             }
             
-            // 气球主体（带缩放）
             const bs = balloon.scale;
             const gradient = ctx.createRadialGradient(
-                balloon.x - 5, bsy - 5, 0,
+                balloon.x - 4, bsy - 4, 0,
                 balloon.x, bsy, balloon.radius * bs
             );
-            gradient.addColorStop(0, '#7ee8fa');
+            gradient.addColorStop(0, '#81ecec');
             gradient.addColorStop(0.6, '#00d4ff');
-            gradient.addColorStop(1, '#0077b6');
+            gradient.addColorStop(1, '#0984e3');
             
             ctx.fillStyle = gradient;
             ctx.beginPath();
             ctx.ellipse(
-                balloon.x + wobble * 0.3, 
+                balloon.x + wobble * 0.25, 
                 bsy, 
                 balloon.radius * bs, 
-                balloon.radius * 1.15 * bs, 
-                wobble * 0.02, 
+                balloon.radius * 1.12 * bs, 
+                wobble * 0.015, 
                 0, 
                 Math.PI * 2
             );
@@ -1166,43 +1154,42 @@
             
             ctx.shadowBlur = 0;
             
-            // 高光
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
             ctx.beginPath();
             ctx.ellipse(
-                balloon.x - 6 + wobble * 0.2, 
-                bsy - 8, 
-                6 * bs, 
-                8 * bs, 
-                -0.3, 
+                balloon.x - 5 + wobble * 0.15, 
+                bsy - 7, 
+                5 * bs, 
+                7 * bs, 
+                -0.25, 
                 0, 
                 Math.PI * 2
             );
             ctx.fill();
             
-            // 绳子（贝塞尔曲线）
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            // 绳子
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
             ctx.lineWidth = 1.5;
             ctx.beginPath();
-            ctx.moveTo(balloon.x + wobble * 0.3, bsy + balloon.radius * 1.1 * bs);
+            ctx.moveTo(balloon.x + wobble * 0.25, bsy + balloon.radius * 1.08 * bs);
             
-            const ropeSwing = Math.sin(Date.now() * 0.003) * 8 + wind.current * 3;
+            const ropeSwing = Math.sin(Date.now() * 0.0025) * 6 + wind.current * 2.5;
             ctx.bezierCurveTo(
-                balloon.x + ropeSwing, bsy + balloon.radius * 1.3 * bs,
-                balloon.x + ropeSwing * 0.5, bsy + balloon.radius * 1.5 * bs,
-                balloon.x, bsy + balloon.radius * 1.6 * bs + 15
+                balloon.x + ropeSwing, bsy + balloon.radius * 1.25 * bs,
+                balloon.x + ropeSwing * 0.4, bsy + balloon.radius * 1.45 * bs,
+                balloon.x, bsy + balloon.radius * 1.55 * bs + 12
             );
             ctx.stroke();
             
-            // 底部小篮子
-            ctx.fillStyle = 'rgba(200, 150, 100, 0.6)';
-            ctx.fillRect(balloon.x - 6, bsy + balloon.radius * 1.6 * bs + 15, 12, 8);
+            // 小篮子
+            ctx.fillStyle = 'rgba(180, 140, 90, 0.55)';
+            ctx.fillRect(balloon.x - 5, bsy + balloon.radius * 1.55 * bs + 12, 10, 7);
             
             ctx.globalAlpha = 1;
             
-            // 气压警告（低生命）
+            // 低生命警告
             if (lives === 1) {
-                ctx.fillStyle = `rgba(255, 50, 50, ${0.15 + Math.sin(Date.now() * 0.008) * 0.1})`;
+                ctx.fillStyle = `rgba(255, 50, 50, ${0.12 + Math.sin(Date.now() * 0.006) * 0.08})`;
                 ctx.fillRect(-offsetX / scale, -offsetY / scale, canvas.width / scale, canvas.height / scale);
             }
             
@@ -1279,4 +1266,9 @@
         gameLoop();
     </script>
 </body>
-</html>
+</html>'''
+
+with open('/mnt/agents/output/time_balloon_demo.html', 'w', encoding='utf-8') as f:
+    f.write(html_content)
+
+print("✅ 已更新！")
