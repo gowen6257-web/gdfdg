@@ -3,7 +3,9 @@ html_content = '''<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>时间气球 - Time Balloon</title>
     <style>
         * {
@@ -11,30 +13,30 @@ html_content = '''<!DOCTYPE html>
             padding: 0;
             box-sizing: border-box;
             touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
         
-        body {
-            background: #1a1a2e;
+        html, body {
+            width: 100%;
+            height: 100%;
             overflow: hidden;
-            font-family: 'Microsoft YaHei', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+            background: #0a0a1a;
         }
         
         #gameContainer {
             position: relative;
-            width: 400px;
-            height: 700px;
+            width: 100vw;
+            height: 100vh;
             background: linear-gradient(180deg, #0f0f23 0%, #1a1a3e 50%, #16213e 100%);
-            border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 0 40px rgba(100, 200, 255, 0.3);
         }
         
         canvas {
             display: block;
+            width: 100%;
+            height: 100%;
         }
         
         #ui {
@@ -48,9 +50,10 @@ html_content = '''<!DOCTYPE html>
         
         #pressureBar {
             position: absolute;
-            top: 15px;
+            top: max(15px, env(safe-area-inset-top));
             left: 15px;
-            width: 120px;
+            width: 30vw;
+            max-width: 140px;
             height: 12px;
             background: rgba(255,255,255,0.1);
             border-radius: 6px;
@@ -68,7 +71,7 @@ html_content = '''<!DOCTYPE html>
         
         #pressureLabel {
             position: absolute;
-            top: 30px;
+            top: calc(max(15px, env(safe-area-inset-top)) + 16px);
             left: 15px;
             color: rgba(255,255,255,0.7);
             font-size: 10px;
@@ -76,25 +79,26 @@ html_content = '''<!DOCTYPE html>
         
         #score {
             position: absolute;
-            top: 15px;
+            top: max(15px, env(safe-area-inset-top));
             right: 15px;
             color: #ffd700;
-            font-size: 20px;
+            font-size: clamp(16px, 5vw, 24px);
             font-weight: bold;
             text-shadow: 0 0 10px rgba(255,215,0,0.5);
         }
         
         #timeState {
             position: absolute;
-            top: 50px;
+            top: max(50px, calc(env(safe-area-inset-top) + 35px));
             left: 50%;
             transform: translateX(-50%);
             padding: 4px 16px;
             border-radius: 20px;
-            font-size: 12px;
+            font-size: clamp(10px, 3vw, 14px);
             font-weight: bold;
             letter-spacing: 2px;
             transition: all 0.3s;
+            white-space: nowrap;
         }
         
         #timeState.flowing {
@@ -119,9 +123,10 @@ html_content = '''<!DOCTYPE html>
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: rgba(0,0,0,0.85);
+            background: rgba(0,0,0,0.88);
             pointer-events: all;
             z-index: 10;
+            padding: 20px;
         }
         
         #gameOverScreen {
@@ -129,36 +134,33 @@ html_content = '''<!DOCTYPE html>
         }
         
         .title {
-            font-size: 36px;
+            font-size: clamp(28px, 8vw, 42px);
             color: #00d4ff;
             text-shadow: 0 0 20px rgba(0,212,255,0.5);
             margin-bottom: 10px;
             letter-spacing: 4px;
+            text-align: center;
         }
         
         .subtitle {
             color: rgba(255,255,255,0.6);
-            font-size: 14px;
+            font-size: clamp(12px, 3.5vw, 16px);
             margin-bottom: 40px;
         }
         
         .btn {
-            padding: 12px 40px;
+            padding: 14px 50px;
             background: linear-gradient(135deg, #00d4ff, #7b2cbf);
             border: none;
             border-radius: 30px;
             color: white;
-            font-size: 18px;
+            font-size: clamp(16px, 5vw, 20px);
             font-weight: bold;
             cursor: pointer;
             pointer-events: all;
             transition: transform 0.2s, box-shadow 0.2s;
             box-shadow: 0 4px 20px rgba(0,212,255,0.3);
-        }
-        
-        .btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 30px rgba(0,212,255,0.5);
+            -webkit-tap-highlight-color: transparent;
         }
         
         .btn:active {
@@ -167,14 +169,15 @@ html_content = '''<!DOCTYPE html>
         
         .hint {
             margin-top: 30px;
-            color: rgba(255,255,255,0.4);
-            font-size: 12px;
+            color: rgba(255,255,255,0.5);
+            font-size: clamp(11px, 3vw, 13px);
             text-align: center;
             line-height: 2;
+            max-width: 320px;
         }
         
         .finalScore {
-            font-size: 48px;
+            font-size: clamp(36px, 12vw, 56px);
             color: #ffd700;
             text-shadow: 0 0 20px rgba(255,215,0,0.5);
             margin-bottom: 10px;
@@ -182,31 +185,48 @@ html_content = '''<!DOCTYPE html>
         
         .bestScore {
             color: rgba(255,255,255,0.5);
-            font-size: 14px;
+            font-size: clamp(12px, 3.5vw, 16px);
             margin-bottom: 30px;
         }
         
         #combo {
             position: absolute;
-            top: 80px;
+            top: max(85px, calc(env(safe-area-inset-top) + 70px));
             left: 50%;
             transform: translateX(-50%);
             color: #ff6b6b;
-            font-size: 24px;
+            font-size: clamp(18px, 5vw, 24px);
             font-weight: bold;
             opacity: 0;
             transition: opacity 0.3s;
             text-shadow: 0 0 10px rgba(255,107,107,0.5);
+            white-space: nowrap;
         }
         
         #combo.show {
             opacity: 1;
         }
+        
+        .tutorial-hint {
+            position: absolute;
+            bottom: max(30px, env(safe-area-inset-bottom));
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.3);
+            font-size: 12px;
+            text-align: center;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.7; }
+        }
     </style>
 </head>
 <body>
     <div id="gameContainer">
-        <canvas id="gameCanvas" width="400" height="700"></canvas>
+        <canvas id="gameCanvas"></canvas>
         
         <div id="ui">
             <div id="pressureBar">
@@ -216,12 +236,15 @@ html_content = '''<!DOCTYPE html>
             <div id="score">0</div>
             <div id="timeState" class="paused">⏸ 时间暂停</div>
             <div id="combo"></div>
+            <div class="tutorial-hint" id="tutorialHint" style="display:none">
+                按住上升 · 松开暂停 · 左右滑动移动
+            </div>
         </div>
         
         <div id="startScreen">
             <div class="title">⏱ 时间气球</div>
             <div class="subtitle">Time Balloon</div>
-            <button class="btn" onclick="startGame()">开始游戏</button>
+            <button class="btn" id="startBtn">开始游戏</button>
             <div class="hint">
                 🎈 按住屏幕 = 时间流动 + 气球上升<br>
                 ✋ 松开屏幕 = 时间暂停 + 缓慢下降<br>
@@ -233,7 +256,7 @@ html_content = '''<!DOCTYPE html>
         <div id="gameOverScreen">
             <div class="finalScore" id="finalScore">0</div>
             <div class="bestScore">最佳: <span id="bestScore">0</span></div>
-            <button class="btn" onclick="restartGame()">再来一次</button>
+            <button class="btn" id="restartBtn">再来一次</button>
             <div class="hint" style="margin-top:20px">
                 💀 气球爆炸了！<br>
                 下次注意躲避障碍和子弹
@@ -245,8 +268,59 @@ html_content = '''<!DOCTYPE html>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         
+        // 响应式画布尺寸
+        let GAME_WIDTH = 400;
+        let GAME_HEIGHT = 700;
+        let scale = 1;
+        let offsetX = 0;
+        let offsetY = 0;
+        
+        function resizeCanvas() {
+            const container = document.getElementById('gameContainer');
+            const containerWidth = container.clientWidth;
+            const containerHeight = container.clientHeight;
+            
+            // 保持 4:7 的宽高比
+            const targetRatio = GAME_WIDTH / GAME_HEIGHT;
+            const containerRatio = containerWidth / containerHeight;
+            
+            if (containerRatio > targetRatio) {
+                // 容器更宽，以高度为准
+                scale = containerHeight / GAME_HEIGHT;
+                offsetX = (containerWidth - GAME_WIDTH * scale) / 2;
+                offsetY = 0;
+            } else {
+                // 容器更高，以宽度为准
+                scale = containerWidth / GAME_WIDTH;
+                offsetX = 0;
+                offsetY = (containerHeight - GAME_HEIGHT * scale) / 2;
+            }
+            
+            canvas.width = containerWidth;
+            canvas.height = containerHeight;
+        }
+        
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // 坐标转换：屏幕坐标 → 游戏坐标
+        function screenToGame(sx, sy) {
+            return {
+                x: (sx - offsetX) / scale,
+                y: (sy - offsetY) / scale
+            };
+        }
+        
+        // 绘制坐标转换：游戏坐标 → 屏幕坐标
+        function gameToScreen(gx, gy) {
+            return {
+                x: gx * scale + offsetX,
+                y: gy * scale + offsetY
+            };
+        }
+        
         // 游戏状态
-        let gameState = 'menu'; // menu, playing, gameover
+        let gameState = 'menu';
         let isPressing = false;
         let score = 0;
         let bestScore = localStorage.getItem('timeBalloonBest') || 0;
@@ -286,7 +360,7 @@ html_content = '''<!DOCTYPE html>
         let spawnTimer = 0;
         let difficulty = 1;
         
-        // 触摸/鼠标输入
+        // 触摸/鼠标输入（游戏坐标）
         let touchX = 200;
         
         // 初始化背景星星
@@ -294,7 +368,7 @@ html_content = '''<!DOCTYPE html>
             stars = [];
             for (let i = 0; i < 100; i++) {
                 stars.push({
-                    x: Math.random() * 400,
+                    x: Math.random() * GAME_WIDTH,
                     y: Math.random() * 2000 - 1000,
                     size: Math.random() * 2 + 0.5,
                     brightness: Math.random(),
@@ -331,7 +405,7 @@ html_content = '''<!DOCTYPE html>
                     break;
                 case 'laser':
                     obs.x = 0;
-                    obs.width = 400;
+                    obs.width = GAME_WIDTH;
                     obs.height = 4;
                     obs.active = false;
                     obs.timer = 0;
@@ -386,7 +460,7 @@ html_content = '''<!DOCTYPE html>
             }
         }
         
-        // 碰撞检测
+        // 碰撞检测（游戏坐标）
         function checkCollision(balloon, obj) {
             const dx = balloon.x - obj.x;
             const dy = (balloon.y - cameraY) - (obj.y - cameraY);
@@ -397,9 +471,12 @@ html_content = '''<!DOCTYPE html>
         // 开始游戏
         function startGame() {
             document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('tutorialHint').style.display = 'block';
+            setTimeout(() => {
+                document.getElementById('tutorialHint').style.display = 'none';
+            }, 5000);
             gameState = 'playing';
             resetGame();
-            gameLoop();
         }
         
         // 重置游戏
@@ -426,7 +503,6 @@ html_content = '''<!DOCTYPE html>
             
             initStars();
             
-            // 预生成一些障碍
             for (let i = 0; i < 5; i++) {
                 spawnObstacle();
                 obstacles[obstacles.length - 1].y = -200 - i * 200;
@@ -459,15 +535,13 @@ html_content = '''<!DOCTYPE html>
         function update() {
             if (gameState !== 'playing') return;
             
-            // 难度递增
             difficulty = 1 + distance / 2000;
             
-            // 气压管理
             if (isPressing) {
                 balloon.pressure -= balloon.pressureDrain;
                 if (balloon.pressure <= 0) {
                     balloon.pressure = 0;
-                    isPressing = false; // 强制松开
+                    isPressing = false;
                 }
             } else {
                 balloon.pressure += balloon.pressureRecover;
@@ -476,24 +550,19 @@ html_content = '''<!DOCTYPE html>
                 }
             }
             
-            // 气球物理
             if (isPressing) {
-                // 时间流动：上升
                 balloon.vy = -balloon.riseSpeed;
                 balloon.glow = Math.min(balloon.glow + 0.1, 1);
                 
-                // 水平移动（向触摸位置靠近）
                 const dx = touchX - balloon.x;
                 balloon.vx += dx * 0.02;
                 balloon.vx = Math.max(-balloon.horizontalSpeed, Math.min(balloon.horizontalSpeed, balloon.vx));
                 
-                // 摄像机跟随（向上滚动）
                 if (balloon.y < cameraY + 300) {
                     cameraY -= balloon.riseSpeed;
                     distance += balloon.riseSpeed;
                 }
             } else {
-                // 时间暂停：缓慢下降
                 balloon.vy = balloon.fallSpeed;
                 balloon.vx *= balloon.friction;
                 balloon.glow = Math.max(balloon.glow - 0.1, 0);
@@ -502,13 +571,10 @@ html_content = '''<!DOCTYPE html>
             balloon.x += balloon.vx;
             balloon.y += balloon.vy;
             
-            // 边界限制
-            balloon.x = Math.max(balloon.radius, Math.min(400 - balloon.radius, balloon.x));
+            balloon.x = Math.max(balloon.radius, Math.min(GAME_WIDTH - balloon.radius, balloon.x));
             
-            // 分数
             score += isPressing ? 0.1 : 0.05;
             
-            // 连击
             if (comboTimer > 0) {
                 comboTimer--;
                 if (comboTimer <= 0) {
@@ -517,7 +583,6 @@ html_content = '''<!DOCTYPE html>
                 }
             }
             
-            // 生成新障碍
             spawnTimer++;
             if (spawnTimer > Math.max(60, 120 - difficulty * 10)) {
                 spawnTimer = 0;
@@ -525,7 +590,6 @@ html_content = '''<!DOCTYPE html>
                 if (Math.random() < 0.3) spawnCoins();
             }
             
-            // 更新障碍
             obstacles.forEach((obs, i) => {
                 if (!obs.active) return;
                 
@@ -549,7 +613,6 @@ html_content = '''<!DOCTYPE html>
                             obs.trail.push({x: obs.x, y: obs.y});
                             if (obs.trail.length > 10) obs.trail.shift();
                             
-                            // 追踪气球
                             const dx = balloon.x - obs.x;
                             const dy = (balloon.y) - obs.y;
                             const dist = Math.sqrt(dx * dx + dy * dy);
@@ -564,20 +627,17 @@ html_content = '''<!DOCTYPE html>
                         break;
                 }
                 
-                // 碰撞检测
                 if (checkCollision(balloon, obs)) {
                     if (obs.type !== 'laser' || obs.active) {
                         gameOver();
                     }
                 }
                 
-                // 清理远离的障碍
                 if (obs.y > cameraY + 900) {
                     obstacles.splice(i, 1);
                 }
             });
             
-            // 更新金币
             coins.forEach((coin, i) => {
                 if (coin.collected) return;
                 
@@ -601,7 +661,6 @@ html_content = '''<!DOCTYPE html>
                 }
             });
             
-            // 更新粒子
             particles.forEach((p, i) => {
                 p.x += p.vx;
                 p.y += p.vy;
@@ -610,18 +669,16 @@ html_content = '''<!DOCTYPE html>
                 if (p.life <= 0) particles.splice(i, 1);
             });
             
-            // 更新背景星星
             stars.forEach(star => {
                 if (isPressing) {
                     star.y += star.speed * 3;
                 }
                 if (star.y > cameraY + 900) {
                     star.y = cameraY - 100;
-                    star.x = Math.random() * 400;
+                    star.x = Math.random() * GAME_WIDTH;
                 }
             });
             
-            // 更新UI
             document.getElementById('score').textContent = Math.floor(score);
             document.getElementById('pressureFill').style.width = (balloon.pressure / balloon.maxPressure * 100) + '%';
             
@@ -635,9 +692,18 @@ html_content = '''<!DOCTYPE html>
             }
         }
         
-        // 绘制
+        // 绘制（带缩放适配）
         function draw() {
-            ctx.clearRect(0, 0, 400, 700);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制背景（全屏填充）
+            ctx.fillStyle = '#0f0f23';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 保存上下文用于缩放
+            ctx.save();
+            ctx.translate(offsetX, offsetY);
+            ctx.scale(scale, scale);
             
             // 绘制背景星星
             stars.forEach(star => {
@@ -654,13 +720,11 @@ html_content = '''<!DOCTYPE html>
                 const bobY = Math.sin(coin.bob) * 5;
                 const screenY = coin.y - cameraY + 350 + bobY;
                 
-                // 金币光晕
                 ctx.fillStyle = 'rgba(255, 215, 0, 0.2)';
                 ctx.beginPath();
                 ctx.arc(coin.x, screenY, coin.radius + 5, 0, Math.PI * 2);
                 ctx.fill();
                 
-                // 金币本体
                 ctx.fillStyle = '#ffd700';
                 ctx.beginPath();
                 ctx.arc(coin.x, screenY, coin.radius, 0, Math.PI * 2);
@@ -726,7 +790,6 @@ html_content = '''<!DOCTYPE html>
                         break;
                         
                     case 'missile':
-                        // 尾迹
                         obs.trail.forEach((t, i) => {
                             const tScreenY = t.y - cameraY + 350;
                             ctx.fillStyle = `rgba(255, 100, 50, ${i / obs.trail.length * 0.5})`;
@@ -735,7 +798,6 @@ html_content = '''<!DOCTYPE html>
                             ctx.fill();
                         });
                         
-                        // 导弹本体
                         ctx.fillStyle = '#ff6348';
                         ctx.beginPath();
                         ctx.arc(obs.x, screenY, obs.radius, 0, Math.PI * 2);
@@ -762,13 +824,11 @@ html_content = '''<!DOCTYPE html>
             // 绘制气球
             const screenBalloonY = balloon.y - cameraY + 350;
             
-            // 气球光晕
             if (balloon.glow > 0) {
                 ctx.shadowColor = '#00d4ff';
                 ctx.shadowBlur = 20 + balloon.glow * 15;
             }
             
-            // 气球主体
             const gradient = ctx.createRadialGradient(
                 balloon.x - 5, screenBalloonY - 5, 0,
                 balloon.x, screenBalloonY, balloon.radius
@@ -784,13 +844,11 @@ html_content = '''<!DOCTYPE html>
             
             ctx.shadowBlur = 0;
             
-            // 高光
             ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
             ctx.beginPath();
             ctx.ellipse(balloon.x - 6, screenBalloonY - 8, 6, 8, -0.3, 0, Math.PI * 2);
             ctx.fill();
             
-            // 气球绳
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
             ctx.lineWidth = 1.5;
             ctx.beginPath();
@@ -806,15 +864,14 @@ html_content = '''<!DOCTYPE html>
             // 暂停时的视觉效果
             if (!isPressing && gameState === 'playing') {
                 ctx.fillStyle = 'rgba(100, 200, 255, 0.08)';
-                ctx.fillRect(0, 0, 400, 700);
+                ctx.fillRect(-offsetX/scale, -offsetY/scale, canvas.width/scale, canvas.height/scale);
                 
-                // 扫描线效果
                 ctx.strokeStyle = 'rgba(100, 200, 255, 0.1)';
                 ctx.lineWidth = 1;
-                for (let i = 0; i < 700; i += 20) {
+                for (let i = 0; i < GAME_HEIGHT; i += 20) {
                     ctx.beginPath();
-                    ctx.moveTo(0, i);
-                    ctx.lineTo(400, i);
+                    ctx.moveTo(-offsetX/scale, i);
+                    ctx.lineTo(GAME_WIDTH + offsetX/scale, i);
                     ctx.stroke();
                 }
             }
@@ -822,8 +879,10 @@ html_content = '''<!DOCTYPE html>
             // 气压警告
             if (balloon.pressure < 20) {
                 ctx.fillStyle = `rgba(255, 50, 50, ${0.3 + Math.sin(Date.now() * 0.01) * 0.2})`;
-                ctx.fillRect(0, 0, 400, 700);
+                ctx.fillRect(-offsetX/scale, -offsetY/scale, canvas.width/scale, canvas.height/scale);
             }
+            
+            ctx.restore();
         }
         
         // 游戏循环
@@ -834,45 +893,47 @@ html_content = '''<!DOCTYPE html>
         }
         
         // 输入处理
-        canvas.addEventListener('mousedown', (e) => {
-            if (gameState !== 'playing') return;
-            isPressing = true;
-            touchX = e.offsetX;
-        });
-        
-        canvas.addEventListener('mousemove', (e) => {
-            touchX = e.offsetX;
-        });
-        
-        canvas.addEventListener('mouseup', () => {
-            isPressing = false;
-        });
-        
-        canvas.addEventListener('mouseleave', () => {
-            isPressing = false;
-        });
-        
-        // 触摸支持
-        canvas.addEventListener('touchstart', (e) => {
+        function handleStart(e) {
             if (gameState !== 'playing') return;
             e.preventDefault();
             isPressing = true;
-            const rect = canvas.getBoundingClientRect();
-            touchX = e.touches[0].clientX - rect.left;
-        }, {passive: false});
+            const pos = getEventPos(e);
+            const gamePos = screenToGame(pos.x, pos.y);
+            touchX = gamePos.x;
+        }
         
-        canvas.addEventListener('touchmove', (e) => {
+        function handleMove(e) {
             e.preventDefault();
-            const rect = canvas.getBoundingClientRect();
-            touchX = e.touches[0].clientX - rect.left;
-        }, {passive: false});
+            const pos = getEventPos(e);
+            const gamePos = screenToGame(pos.x, pos.y);
+            touchX = gamePos.x;
+        }
         
-        canvas.addEventListener('touchend', (e) => {
+        function handleEnd(e) {
             e.preventDefault();
             isPressing = false;
-        }, {passive: false});
+        }
         
-        // 键盘支持（空格键）
+        function getEventPos(e) {
+            if (e.touches && e.touches.length > 0) {
+                const rect = canvas.getBoundingClientRect();
+                return {
+                    x: e.touches[0].clientX - rect.left,
+                    y: e.touches[0].clientY - rect.top
+                };
+            }
+            return { x: e.offsetX, y: e.offsetY };
+        }
+        
+        canvas.addEventListener('mousedown', handleStart);
+        canvas.addEventListener('mousemove', handleMove);
+        canvas.addEventListener('mouseup', handleEnd);
+        canvas.addEventListener('mouseleave', handleEnd);
+        
+        canvas.addEventListener('touchstart', handleStart, {passive: false});
+        canvas.addEventListener('touchmove', handleMove, {passive: false});
+        canvas.addEventListener('touchend', handleEnd, {passive: false});
+        
         document.addEventListener('keydown', (e) => {
             if (e.code === 'Space' && gameState === 'playing') {
                 isPressing = true;
@@ -885,15 +946,28 @@ html_content = '''<!DOCTYPE html>
             }
         });
         
+        // 按钮事件
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('startBtn').addEventListener('touchend', (e) => {
+            e.preventDefault();
+            startGame();
+        });
+        
+        document.getElementById('restartBtn').addEventListener('click', restartGame);
+        document.getElementById('restartBtn').addEventListener('touchend', (e) => {
+            e.preventDefault();
+            restartGame();
+        });
+        
         // 初始化
         initStars();
-        draw();
+        resizeCanvas();
+        gameLoop();
     </script>
 </body>
 </html>'''
 
-# 保存文件
 with open('/mnt/agents/output/time_balloon_demo.html', 'w', encoding='utf-8') as f:
     f.write(html_content)
 
-print("文件已保存！")
+print("✅ 已更新全屏适配版本！")
