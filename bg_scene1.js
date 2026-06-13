@@ -1,7 +1,7 @@
 // ========== 场景 6：外太空（500m+）— 参考图 6 还原 ==========
 // 依赖全局：ctx, GAME_WIDTH, GAME_HEIGHT, height
 
-function drawScene6(alpha, h) {
+function drawScene1(alpha, h) {
     if (alpha <= 0.01) return;
     ctx.globalAlpha = alpha;
     const shift = (h - 500) * 2.5;
