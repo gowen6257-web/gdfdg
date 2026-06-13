@@ -14,7 +14,7 @@ function drawScene1(alpha, h) {
     ctx.fillStyle = g1;
     ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-    // 阳光射线（3 条斜向贝塞尔带状，极淡）
+    // 阳光射线（7 条斜向贝塞尔带状，极淡）
     ctx.fillStyle = 'rgba(255,250,230,0.06)';
     for (let i = 0; i < 3; i++) {
         ctx.beginPath();
