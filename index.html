@@ -110,14 +110,14 @@ function screenToGameX(sx) {
     return Math.max(balloon.radius + 10, Math.min(GAME_WIDTH - balloon.radius - 10, gx));
 }
 
-// ========== 场景系统（每100m一层，自然过渡） ==========
+// ========== 场景系统 ==========
 const SCENES = [
-    { h: 0,   name: '🏠 家门口',    top: [135,206,235], bot: [224,246,255], ground: [76,175,80],  house: true,  cloudOp: 0.6 },
-    { h: 100, name: '🌇 夕阳云层',  top: [255,107,53],  bot: [255,217,61],  ground: null,    sunset: true, cloudOp: 0.4 },
-    { h: 200, name: '🌙 月夜星空',  top: [15,15,35],    bot: [26,26,62],    ground: null,    moon: true,   cloudOp: 0.15, starBright: 0.8 },
-    { h: 300, name: '⛈️ 雷暴云层',  top: [26,26,46],    bot: [44,44,80],    ground: null,    storm: true,  cloudOp: 0.7, starBright: 0.3 },
-    { h: 400, name: '🌏 近地轨道',  top: [0,4,40],      bot: [0,30,80],     ground: null,    earth: true,  cloudOp: 0.05, starBright: 1.2 },
-    { h: 500, name: '🚀 外太空',    top: [0,0,0],       bot: [5,5,15],      ground: null,    space: true,  cloudOp: 0,    starBright: 1.5 }
+    { h: 0,   name: '🏠 家门口' },
+    { h: 100, name: '🌇 夕阳云层' },
+    { h: 200, name: '🌙 月夜星空' },
+    { h: 300, name: '⛈️ 雷暴云层' },
+    { h: 400, name: '🌏 近地轨道' },
+    { h: 500, name: '🚀 外太空' }
 ];
 
 function lerp(a, b, t) { return a + (b - a) * t; }
@@ -140,7 +140,7 @@ function getSceneMix(h) {
 
 // ========== 游戏状态 ==========
 let gameState = 'menu', isPressing = false, score = 0;
-let bestScore = localStorage.getItem('kittyBalloonBest') || 0;
+let bestScore = localStorage.getItem('kittyBalloonBest2') || 0;
 let combo = 0, comboTimer = 0;
 
 const balloon = {
@@ -307,7 +307,7 @@ function updateHearts() {
 }
 function gameOver() {
     gameState = 'gameover';
-    if (score > bestScore) { bestScore = score; localStorage.setItem('kittyBalloonBest', bestScore); }
+    if (score > bestScore) { bestScore = score; localStorage.setItem('kittyBalloonBest2', bestScore); }
     document.getElementById('finalScore').textContent = Math.floor(score);
     document.getElementById('bestScore').textContent = Math.floor(bestScore);
     document.getElementById('gameOverScreen').style.display = 'flex';
@@ -398,7 +398,6 @@ function update() {
     particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.vy += p.gravity; p.life -= p.decay; p.vx *= 0.985; if (p.life <= 0) particles.splice(i, 1); });
 
     const mix = getSceneMix(height);
-    const starBright = lerp(mix.s1.starBright || 0.5, mix.s2.starBright || 0.5, mix.t);
     stars.forEach(star => {
         const moveSpeed = isPressing ? star.speed * speedMultiplier * 1.5 : star.speed * 0.3;
         star.y += moveSpeed;
@@ -437,203 +436,478 @@ function update() {
     document.getElementById('windText').textContent = getWindDescription(wind.current);
 }
 
-// ========== 绘制场景背景（参考6张图风格） ==========
-function drawSceneBackground(mix) {
-    const { s1, s2, t, idx } = mix;
-    const topColor = lerpColor(s1.top, s2.top, t);
-    const botColor = lerpColor(s1.bot, s2.bot, t);
+// ========== 1:1 场景还原绘制 ==========
 
-    // 天空渐变
-    const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    skyGrad.addColorStop(0, topColor);
-    skyGrad.addColorStop(1, botColor);
-    ctx.fillStyle = skyGrad;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+// 场景1：家门口（参考图1：明亮蓝天、粉紫渐变、绿色尖山、彩色气球、光点、斜线）
+function drawScene1(alpha, height) {
+    if (alpha <= 0.01) return;
+    ctx.globalAlpha = alpha;
+    const shift = height * 3.5;
+
+    // 天空：天蓝 → 淡紫 → 淡粉
+    const g1 = ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT);
+    g1.addColorStop(0, '#4FC3F7');
+    g1.addColorStop(0.5, '#B39DDB');
+    g1.addColorStop(1, '#F8BBD0');
+    ctx.fillStyle = g1;
+    ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+    // 斜向光线（右上到左下）
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 6; i++) {
+        ctx.beginPath();
+        ctx.moveTo(360 + i * 25, 0);
+        ctx.lineTo(60 + i * 25, GAME_HEIGHT);
+        ctx.stroke();
+    }
+
+    // 光点（bokeh）
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    const bokeh = [[60,120],[180,80],[320,160],[90,280],[250,220],[350,300],[140,380],[300,100],[40,420],[220,340]];
+    bokeh.forEach(b => {
+        ctx.beginPath();
+        ctx.arc(b[0], b[1] + shift * 0.1, 2 + (b[0] % 3) * 0.8, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    // 远山（淡绿）
+    ctx.fillStyle = '#81C784';
+    ctx.beginPath();
+    ctx.moveTo(0, 500 + shift);
+    ctx.lineTo(50, 460 + shift); ctx.lineTo(100, 485 + shift);
+    ctx.lineTo(150, 445 + shift); ctx.lineTo(210, 470 + shift);
+    ctx.lineTo(270, 440 + shift); ctx.lineTo(330, 465 + shift);
+    ctx.lineTo(400, 450 + shift); ctx.lineTo(400, 700 + shift); ctx.lineTo(0, 700 + shift);
+    ctx.closePath(); ctx.fill();
+
+    // 中山（中绿）
+    ctx.fillStyle = '#66BB6A';
+    ctx.beginPath();
+    ctx.moveTo(0, 530 + shift);
+    ctx.lineTo(70, 490 + shift); ctx.lineTo(140, 520 + shift);
+    ctx.lineTo(200, 480 + shift); ctx.lineTo(280, 510 + shift);
+    ctx.lineTo(340, 485 + shift); ctx.lineTo(400, 505 + shift);
+    ctx.lineTo(400, 700 + shift); ctx.lineTo(0, 700 + shift);
+    ctx.closePath(); ctx.fill();
+
+    // 近山（深绿）
+    ctx.fillStyle = '#43A047';
+    ctx.beginPath();
+    ctx.moveTo(0, 560 + shift);
+    ctx.lineTo(80, 530 + shift); ctx.lineTo(160, 560 + shift);
+    ctx.lineTo(240, 520 + shift); ctx.lineTo(320, 550 + shift);
+    ctx.lineTo(400, 530 + shift); ctx.lineTo(400, 700 + shift); ctx.lineTo(0, 700 + shift);
+    ctx.closePath(); ctx.fill();
+
+    // 地面
+    ctx.fillStyle = '#2E7D32';
+    ctx.fillRect(0, 600 + shift, GAME_WIDTH, 200);
+
+    // 彩色气球（带轻微摆动）
+    const time = Date.now() * 0.001;
+    const balloons = [
+        {x: 70, y: 180, c: '#F44336', s: 1.0}, {x: 130, y: 140, c: '#FFEB3B', s: 0.9},
+        {x: 195, y: 200, c: '#2196F3', s: 1.1}, {x: 260, y: 160, c: '#4CAF50', s: 0.95},
+        {x: 325, y: 220, c: '#9C27B0', s: 1.05}, {x: 160, y: 260, c: '#FF9800', s: 0.85}
+    ];
+    balloons.forEach(b => {
+        const by = b.y + shift * 0.3 + Math.sin(time + b.x) * 4;
+        ctx.fillStyle = b.c;
+        ctx.beginPath();
+        ctx.ellipse(b.x, by, 11 * b.s, 14 * b.s, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // 高光
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        ctx.beginPath();
+        ctx.ellipse(b.x - 3, by - 4, 3.5 * b.s, 4.5 * b.s, -0.3, 0, Math.PI * 2);
+        ctx.fill();
+        // 结
+        ctx.fillStyle = b.c;
+        ctx.beginPath();
+        ctx.moveTo(b.x - 2.5, by + 13 * b.s);
+        ctx.lineTo(b.x + 2.5, by + 13 * b.s);
+        ctx.lineTo(b.x, by + 17 * b.s);
+        ctx.closePath(); ctx.fill();
+        // 绳
+        ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(b.x, by + 17 * b.s);
+        ctx.quadraticCurveTo(b.x + 4, by + 40, b.x + Math.sin(time + b.x * 2) * 3, by + 65);
+        ctx.stroke();
+    });
+
+    ctx.globalAlpha = 1;
+}
+
+// 场景2：夕阳（参考图2：暖橙天空、巨大太阳、暗山剪影、水面反射、暗云）
+function drawScene2(alpha, height) {
+    if (alpha <= 0.01) return;
+    ctx.globalAlpha = alpha;
+    const shift = (height - 100) * 3.5;
+
+    // 天空：深棕 → 深橙 → 亮橙 → 金黄 → 暗棕
+    const g2 = ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT);
+    g2.addColorStop(0, '#6D4C41');
+    g2.addColorStop(0.2, '#8D6E63');
+    g2.addColorStop(0.4, '#BF360C');
+    g2.addColorStop(0.6, '#FF6F00');
+    g2.addColorStop(0.8, '#FFB300');
+    g2.addColorStop(1, '#3E2723');
+    ctx.fillStyle = g2;
+    ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+    // 暗云（画面上部）
+    ctx.fillStyle = 'rgba(62, 39, 35, 0.5)';
+    ctx.beginPath(); ctx.ellipse(100, 90 + shift * 0.2, 90, 30, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(300, 70 + shift * 0.2, 110, 35, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(200, 130 + shift * 0.2, 130, 40, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(350, 150 + shift * 0.2, 80, 25, 0, 0, Math.PI * 2); ctx.fill();
+
+    // 山丘剪影（暗棕色）
+    ctx.fillStyle = '#281A14';
+    ctx.beginPath();
+    ctx.moveTo(0, 430 + shift);
+    ctx.lineTo(40, 390 + shift); ctx.lineTo(100, 415 + shift);
+    ctx.lineTo(160, 375 + shift); ctx.lineTo(230, 405 + shift);
+    ctx.lineTo(290, 370 + shift); ctx.lineTo(350, 400 + shift);
+    ctx.lineTo(400, 385 + shift); ctx.lineTo(400, 700 + shift); ctx.lineTo(0, 700 + shift);
+    ctx.closePath(); ctx.fill();
+
+    // 太阳（巨大，位于中下部）
+    const sunY = 470 + shift;
+    // 外层光晕
+    const sGlow = ctx.createRadialGradient(200, sunY, 20, 200, sunY, 120);
+    sGlow.addColorStop(0, 'rgba(255, 240, 150, 0.8)');
+    sGlow.addColorStop(0.3, 'rgba(255, 200, 50, 0.5)');
+    sGlow.addColorStop(0.6, 'rgba(255, 140, 0, 0.2)');
+    sGlow.addColorStop(1, 'rgba(255, 100, 0, 0)');
+    ctx.fillStyle = sGlow;
+    ctx.beginPath(); ctx.arc(200, sunY, 120, 0, Math.PI * 2); ctx.fill();
+
+    // 太阳本体
+    const sCore = ctx.createRadialGradient(200, sunY, 5, 200, sunY, 38);
+    sCore.addColorStop(0, '#FFF9C4');
+    sCore.addColorStop(0.7, '#FFD54F');
+    sCore.addColorStop(1, '#FF8F00');
+    ctx.fillStyle = sCore;
+    ctx.beginPath(); ctx.arc(200, sunY, 38, 0, Math.PI * 2); ctx.fill();
+
+    // 地面/水面
+    ctx.fillStyle = '#3E2723';
+    ctx.fillRect(0, 510 + shift, GAME_WIDTH, 200);
+
+    // 水面反射（水平光带，中心宽两侧窄）
+    for (let i = 0; i < 10; i++) {
+        const rw = 140 - i * 12;
+        const rx = 200 - rw / 2;
+        const ry = 520 + shift + i * 10;
+        ctx.fillStyle = `rgba(255, 200, 60, ${0.18 - i * 0.015})`;
+        ctx.fillRect(rx, ry, rw, 3);
+    }
+
+    ctx.globalAlpha = 1;
+}
+
+// 场景3：月夜（参考图3：深蓝夜空、满月、暗蓝山丘、水面、流星）
+function drawScene3(alpha, height) {
+    if (alpha <= 0.01) return;
+    ctx.globalAlpha = alpha;
+    const shift = (height - 200) * 3.5;
+
+    // 天空：深黑蓝 → 深蓝 → 灰蓝
+    const g3 = ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT);
+    g3.addColorStop(0, '#02040A');
+    g3.addColorStop(0.3, '#0D1B2A');
+    g3.addColorStop(0.7, '#1B263B');
+    g3.addColorStop(1, '#415A77');
+    ctx.fillStyle = g3;
+    ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+    // 星星
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    const starsPos = [[45,70],[130,110],[310,85],[355,45],[75,200],[260,160],[185,95],[340,180],[55,320],[290,260]];
+    starsPos.forEach(s => {
+        ctx.beginPath(); ctx.arc(s[0], s[1] + shift * 0.05, 1.3, 0, Math.PI * 2); ctx.fill();
+    });
+
+    // 月亮（大圆盘，偏右上）
+    const mx = 300, my = 150 + shift * 0.3;
+    // 光晕
+    const mGlow = ctx.createRadialGradient(mx, my, 25, mx, my, 80);
+    mGlow.addColorStop(0, 'rgba(254, 250, 224, 0.25)');
+    mGlow.addColorStop(1, 'rgba(254, 250, 224, 0)');
+    ctx.fillStyle = mGlow;
+    ctx.beginPath(); ctx.arc(mx, my, 80, 0, Math.PI * 2); ctx.fill();
+
+    // 月亮本体
+    ctx.fillStyle = '#FEFAE0';
+    ctx.beginPath(); ctx.arc(mx, my, 26, 0, Math.PI * 2); ctx.fill();
+
+    // 陨石坑（灰色圆形）
+    ctx.fillStyle = '#D6D6D6';
+    ctx.beginPath(); ctx.arc(mx - 5, my - 6, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(mx + 7, my + 3, 3.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#E0E0E0';
+    ctx.beginPath(); ctx.arc(mx - 2, my + 8, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(mx + 4, my - 3, 2.5, 0, Math.PI * 2); ctx.fill();
+
+    // 山丘剪影（两层）
+    ctx.fillStyle = '#0D1B2A';
+    ctx.beginPath();
+    ctx.moveTo(0, 530 + shift);
+    ctx.bezierCurveTo(50, 510 + shift, 110, 485 + shift, 170, 505 + shift);
+    ctx.bezierCurveTo(230, 525 + shift, 290, 480 + shift, 400, 515 + shift);
+    ctx.lineTo(400, 700 + shift); ctx.lineTo(0, 700 + shift);
+    ctx.closePath(); ctx.fill();
+
+    ctx.fillStyle = '#1B263B';
+    ctx.beginPath();
+    ctx.moveTo(0, 570 + shift);
+    ctx.bezierCurveTo(70, 545 + shift, 150, 520 + shift, 230, 550 + shift);
+    ctx.bezierCurveTo(300, 575 + shift, 360, 535 + shift, 400, 560 + shift);
+    ctx.lineTo(400, 700 + shift); ctx.lineTo(0, 700 + shift);
+    ctx.closePath(); ctx.fill();
+
+    // 水面
+    ctx.fillStyle = '#1B263B';
+    ctx.fillRect(0, 620 + shift, GAME_WIDTH, 80);
+
+    // 月光反射
+    for (let i = 0; i < 7; i++) {
+        const rw = 90 - i * 11;
+        ctx.fillStyle = `rgba(254, 250, 224, ${0.1 - i * 0.012})`;
+        ctx.fillRect(mx - rw / 2, 630 + shift + i * 10, rw, 2);
+    }
+
+    // 流星线
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(340, 40); ctx.lineTo(260, 115); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(90, 90); ctx.lineTo(25, 155); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(380, 180); ctx.lineTo(310, 240); ctx.stroke();
+
+    ctx.globalAlpha = 1;
+}
+
+// 场景4：雷暴（参考图4：黑白、厚重积雨云、雨线、高对比）
+function drawScene4(alpha, height) {
+    if (alpha <= 0.01) return;
+    ctx.globalAlpha = alpha;
+    const shift = (height - 300) * 3.5;
+
+    // 背景：近黑
+    ctx.fillStyle = '#121212';
+    ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+    // 积雨云（多层厚重椭圆，白/灰）
+    const stormClouds = [
+        {x: 90, y: 90 + shift, rx: 85, ry: 45, c: '#EEEEEE'}, {x: 220, y: 70 + shift, rx: 100, ry: 50, c: '#F5F5F5'},
+        {x: 340, y: 100 + shift, rx: 80, ry: 42, c: '#E0E0E0'}, {x: 150, y: 140 + shift, rx: 110, ry: 55, c: '#BDBDBD'},
+        {x: 300, y: 160 + shift, rx: 120, ry: 60, c: '#EEEEEE'}, {x: 50, y: 180 + shift, rx: 90, ry: 48, c: '#9E9E9E'},
+        {x: 200, y: 200 + shift, rx: 100, ry: 52, c: '#E0E0E0'}, {x: 360, y: 210 + shift, rx: 85, ry: 45, c: '#BDBDBD'},
+        {x: 130, y: 250 + shift, rx: 130, ry: 65, c: '#F5F5F5'}, {x: 320, y: 270 + shift, rx: 95, ry: 50, c: '#E0E0E0'},
+        {x: 60, y: 310 + shift, rx: 75, ry: 40, c: '#9E9E9E'}, {x: 260, y: 330 + shift, rx: 110, ry: 58, c: '#BDBDBD'}
+    ];
+
+    stormClouds.forEach(c => {
+        if (c.y > -80 && c.y < GAME_HEIGHT + 80) {
+            ctx.fillStyle = c.c;
+            ctx.beginPath(); ctx.ellipse(c.x, c.y, c.rx, c.ry, 0, 0, Math.PI * 2); ctx.fill();
+        }
+    });
+
+    // 雨线（斜向，从左上到右下）
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 1;
+    const rainSeed = [15, 45, 75, 105, 135, 165, 195, 225, 255, 285, 315, 345, 30, 90, 150, 210, 270, 330, 60, 120, 180, 240, 300, 360, 10, 50, 110, 170, 230, 290, 350, 20, 80, 140, 200, 260, 320, 40, 100, 160];
+    rainSeed.forEach((rx, i) => {
+        const ry = (i * 37 + 180) % 350 + 120 + shift * 0.3;
+        if (ry > 0 && ry < GAME_HEIGHT) {
+            ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx - 5, ry + 28); ctx.stroke();
+        }
+    });
+
+    ctx.globalAlpha = 1;
+}
+
+// 场景5：近地轨道（参考图5：地球弧线、蓝色大气、陆地、云层、太空背景）
+function drawScene5(alpha, height) {
+    if (alpha <= 0.01) return;
+    ctx.globalAlpha = alpha;
+    const shift = (height - 400) * 3.5;
+
+    // 太空背景
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+    // 稀疏星星
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    const s5stars = [[30,40],[80,120],[150,60],[250,30],[320,100],[370,50],[40,250],[200,180],[350,220],[100,300],[280,280],[380,350],[60,400],[180,350],[330,420]];
+    s5stars.forEach(s => {
+        ctx.beginPath(); ctx.arc(s[0], s[1], 1.2, 0, Math.PI * 2); ctx.fill();
+    });
+
+    // 地球（巨大球体从下方进入）
+    const earthY = 920 + shift;
+    const earthR = 520;
+
+    // 大气层光晕（蓝色边缘）
+    const atmo = ctx.createRadialGradient(200, earthY, earthR - 40, 200, earthY, earthR + 80);
+    atmo.addColorStop(0, 'rgba(66, 165, 245, 0)');
+    atmo.addColorStop(0.6, 'rgba(66, 165, 245, 0.2)');
+    atmo.addColorStop(0.85, 'rgba(66, 165, 245, 0.55)');
+    atmo.addColorStop(1, 'rgba(66, 165, 245, 0)');
+    ctx.fillStyle = atmo;
+    ctx.beginPath(); ctx.arc(200, earthY, earthR + 80, 0, Math.PI * 2); ctx.fill();
+
+    // 海洋
+    ctx.fillStyle = '#0D47A1';
+    ctx.beginPath(); ctx.arc(200, earthY, earthR, 0, Math.PI * 2); ctx.fill();
+
+    // 陆地（非洲/欧洲状色块）
+    ctx.fillStyle = '#1B5E20';
+    ctx.beginPath();
+    ctx.moveTo(20, earthY - 120);
+    ctx.bezierCurveTo(80, earthY - 200, 180, earthY - 220, 280, earthY - 170);
+    ctx.bezierCurveTo(340, earthY - 130, 360, earthY - 40, 300, earthY + 30);
+    ctx.bezierCurveTo(240, earthY + 70, 140, earthY + 60, 80, earthY - 20);
+    ctx.bezierCurveTo(40, earthY - 60, 10, earthY - 90, 20, earthY - 120);
+    ctx.closePath(); ctx.fill();
+
+    ctx.fillStyle = '#2E7D32';
+    ctx.beginPath();
+    ctx.moveTo(260, earthY - 100);
+    ctx.bezierCurveTo(330, earthY - 140, 390, earthY - 100, 395, earthY - 30);
+    ctx.bezierCurveTo(400, earthY + 40, 360, earthY + 100, 290, earthY + 80);
+    ctx.bezierCurveTo(230, earthY + 60, 220, earthY - 10, 260, earthY - 100);
+    ctx.closePath(); ctx.fill();
+
+    // 云层（白色半透明带状）
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.beginPath(); ctx.ellipse(140, earthY - 140, 90, 22, 0.15, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(300, earthY - 80, 110, 28, -0.1, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(180, earthY + 10, 130, 32, 0.08, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(320, earthY + 60, 80, 20, -0.15, 0, Math.PI * 2); ctx.fill();
+
+    // 晨昏线（暗部覆盖左侧）
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.beginPath();
+    ctx.moveTo(0, 0); ctx.lineTo(GAME_WIDTH, 0); ctx.lineTo(GAME_WIDTH, earthY);
+    ctx.arc(200, earthY, earthR, 0, Math.PI, true);
+    ctx.lineTo(0, earthY); ctx.closePath(); ctx.fill();
+
+    ctx.globalAlpha = 1;
+}
+
+// 场景6：外太空（参考图6：深紫背景、星云、小行星带、陨石坑）
+function drawScene6(alpha, height) {
+    if (alpha <= 0.01) return;
+    ctx.globalAlpha = alpha;
+    const shift = (height - 500) * 2.5;
+
+    // 深紫背景
+    const g6 = ctx.createRadialGradient(200, 350, 30, 200, 350, 450);
+    g6.addColorStop(0, '#1A0B2E');
+    g6.addColorStop(1, '#0A0514');
+    ctx.fillStyle = g6;
+    ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+    // 星云雾气（淡紫）
+    const neb1 = ctx.createRadialGradient(80, 180, 10, 80, 180, 220);
+    neb1.addColorStop(0, 'rgba(124, 77, 255, 0.12)');
+    neb1.addColorStop(1, 'rgba(124, 77, 255, 0)');
+    ctx.fillStyle = neb1; ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+    const neb2 = ctx.createRadialGradient(340, 520, 20, 340, 520, 250);
+    neb2.addColorStop(0, 'rgba(100, 181, 246, 0.08)');
+    neb2.addColorStop(1, 'rgba(100, 181, 246, 0)');
+    ctx.fillStyle = neb2; ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+    // 星星（较多）
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    for (let i = 0; i < 45; i++) {
+        const sx = (i * 47 + 15) % GAME_WIDTH;
+        const sy = (i * 61 + 30) % GAME_HEIGHT;
+        ctx.beginPath(); ctx.arc(sx, sy + shift * 0.05, 1 + (i % 3) * 0.4, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // 小行星（不规则多边形 + 陨石坑）
+    const roids = [
+        {x: 75, y: 140, r: 20, rot: 0.3, shape: [1,0.85,1.1,0.9,1.05,0.8,1.15,0.95]},
+        {x: 345, y: 290, r: 28, rot: -0.2, shape: [0.95,1.05,0.85,1.1,0.9,1.0,0.8,1.15]},
+        {x: 55, y: 430, r: 16, rot: 0.6, shape: [1.1,0.9,1.0,0.85,1.05,0.95,0.9,1.1]},
+        {x: 355, y: 125, r: 12, rot: -0.1, shape: [0.9,1.0,0.85,1.05,0.95,0.9,1.1,0.8]},
+        {x: 205, y: 560, r: 32, rot: 0.4, shape: [1.0,0.9,1.1,0.85,1.05,0.95,0.9,1.15]},
+        {x: 125, y: 630, r: 18, rot: -0.35, shape: [0.85,1.05,0.9,1.0,1.1,0.8,0.95,1.1]},
+        {x: 310, y: 490, r: 14, rot: 0.15, shape: [1.05,0.9,1.0,0.85,1.1,0.95,0.9,1.0]},
+        {x: 35, y: 310, r: 17, rot: 0.55, shape: [0.9,1.1,0.85,0.95,1.05,0.9,1.0,0.8]},
+        {x: 375, y: 390, r: 21, rot: -0.25, shape: [1.0,0.85,1.05,0.9,1.1,0.95,0.85,1.05]}
+    ];
+
+    roids.forEach(a => {
+        const ay = a.y + shift * 0.4;
+        if (ay < -50 || ay > GAME_HEIGHT + 50) return;
+        ctx.save();
+        ctx.translate(a.x, ay);
+        ctx.rotate(a.rot + shift * 0.0005); // 极缓慢自转
+
+        // 不规则主体
+        ctx.fillStyle = '#5C6BC0';
+        ctx.beginPath();
+        const sides = 8;
+        for (let i = 0; i < sides; i++) {
+            const angle = (Math.PI * 2 / sides) * i - 0.3;
+            const rad = a.r * a.shape[i];
+            const px = Math.cos(angle) * rad;
+            const py = Math.sin(angle) * rad;
+            if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.closePath(); ctx.fill();
+
+        // 陨石坑（深色圆形凹陷）
+        ctx.fillStyle = '#3949AB';
+        ctx.beginPath(); ctx.arc(-a.r * 0.35, -a.r * 0.25, a.r * 0.22, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(a.r * 0.3, a.r * 0.35, a.r * 0.18, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(-a.r * 0.15, a.r * 0.45, a.r * 0.14, 0, Math.PI * 2); ctx.fill();
+
+        ctx.restore();
+    });
+
+    ctx.globalAlpha = 1;
+}
+
+// ========== 主背景绘制 ==========
+function drawSceneBackground(mix) {
+    const { idx, t } = mix;
+
+    // 计算6个场景的alpha
+    let a = [0,0,0,0,0,0];
+    if (idx === 0) { a[0] = 1 - t; a[1] = t; }
+    else if (idx === 1) { a[1] = 1 - t; a[2] = t; }
+    else if (idx === 2) { a[2] = 1 - t; a[3] = t; }
+    else if (idx === 3) { a[3] = 1 - t; a[4] = t; }
+    else if (idx === 4) { a[4] = 1 - t; a[5] = t; }
+    else if (idx >= 5) { a[5] = 1; }
 
     ctx.save();
     ctx.translate(offsetX, offsetY);
     ctx.scale(scale, scale);
 
-    // ========== 1. 家门口 (0-100m) ==========
-    if (idx === 0 || (idx === 0 && t < 0.4) || (idx === 1 && t < 0.2)) {
-        let alpha = 1;
-        if (idx === 0 && t > 0.6) alpha = 1 - (t - 0.6) / 0.4;
-        else if (idx === 1 && t < 0.2) alpha = 1 - t / 0.2;
-        
-        if (alpha > 0) {
-            ctx.globalAlpha = alpha;
-            const groundY = 520 - cameraY * 0.15;
-            
-            // 远山（淡蓝绿色）
-            ctx.fillStyle = '#81C784';
-            ctx.beginPath();
-            ctx.moveTo(0, groundY - 40);
-            ctx.bezierCurveTo(80, groundY - 90, 160, groundY - 50, 240, groundY - 80);
-            ctx.bezierCurveTo(300, groundY - 100, 360, groundY - 60, 400, groundY - 50);
-            ctx.lineTo(400, groundY + 80);
-            ctx.lineTo(0, groundY + 80);
-            ctx.closePath(); ctx.fill();
+    // 按场景顺序绘制（从远到近/从旧到新）
+    drawScene1(a[0], height);
+    drawScene2(a[1], height);
+    drawScene3(a[2], height);
+    drawScene4(a[3], height);
+    drawScene5(a[4], height);
+    drawScene6(a[5], height);
 
-            // 近山（鲜绿色）
-            ctx.fillStyle = '#66BB6A';
-            ctx.beginPath();
-            ctx.moveTo(0, groundY);
-            ctx.bezierCurveTo(60, groundY - 50, 140, groundY - 20, 200, groundY - 60);
-            ctx.bezierCurveTo(280, groundY - 90, 340, groundY - 30, 400, groundY - 40);
-            ctx.lineTo(400, groundY + 80);
-            ctx.lineTo(0, groundY + 80);
-            ctx.closePath(); ctx.fill();
-
-            // 草地
-            ctx.fillStyle = '#4CAF50';
-            ctx.fillRect(0, groundY, GAME_WIDTH, GAME_HEIGHT - groundY + 100);
-
-            // 树木（三角+圆形组合）
-            const drawTree = (tx, ty, scale) => {
-                ctx.fillStyle = '#5D4037';
-                ctx.fillRect(tx - 3 * scale, ty, 6 * scale, 18 * scale);
-                ctx.fillStyle = '#2E7D32';
-                ctx.beginPath(); ctx.arc(tx, ty - 5 * scale, 10 * scale, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = '#388E3C';
-                ctx.beginPath(); ctx.arc(tx - 4 * scale, ty + 2 * scale, 7 * scale, 0, Math.PI * 2); ctx.fill();
-                ctx.beginPath(); ctx.arc(tx + 4 * scale, ty + 2 * scale, 7 * scale, 0, Math.PI * 2); ctx.fill();
-            };
-            drawTree(50, groundY - 5, 1.2);
-            drawTree(340, groundY - 8, 1.5);
-            drawTree(80, groundY - 2, 0.9);
-            drawTree(370, groundY - 3, 1.1);
-
-            // 小房子
-            const hx = 150, hy = groundY - 35;
-            ctx.fillStyle = '#FFF8E1';
-            ctx.fillRect(hx, hy, 50, 38);
-            ctx.fillStyle = '#E53935';
-            ctx.beginPath(); ctx.moveTo(hx - 8, hy); ctx.lineTo(hx + 25, hy - 32); ctx.lineTo(hx + 58, hy); ctx.closePath(); ctx.fill();
-            ctx.fillStyle = '#8D6E63'; ctx.fillRect(hx + 18, hy + 18, 14, 20);
-            ctx.fillStyle = '#81D4FA'; ctx.fillRect(hx + 6, hy + 10, 10, 10); ctx.fillRect(hx + 34, hy + 10, 10, 10);
-
-            // 彩色气球（飘在空中）
-            const bColors = ['#FF5252', '#448AFF', '#FFEB3B', '#69F0AE', '#E040FB'];
-            for (let i = 0; i < 5; i++) {
-                const bx = 60 + i * 70 + Math.sin(Date.now() * 0.001 + i) * 5;
-                const by = 180 + i * 25 + Math.sin(Date.now() * 0.002 + i * 2) * 8;
-                ctx.fillStyle = bColors[i];
-                ctx.beginPath(); ctx.ellipse(bx, by, 10, 13, 0, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = 'rgba(255,255,255,0.3)';
-                ctx.beginPath(); ctx.ellipse(bx - 3, by - 4, 3, 4, -0.3, 0, Math.PI * 2); ctx.fill();
-                // 绳子
-                ctx.strokeStyle = 'rgba(0,0,0,0.2)'; ctx.lineWidth = 1;
-                ctx.beginPath(); ctx.moveTo(bx, by + 13); ctx.lineTo(bx, by + 35); ctx.stroke();
-            }
-            ctx.globalAlpha = 1;
-        }
-    }
-
-    // ========== 2. 夕阳 (100-200m) ==========
-    if ((idx === 1) || (idx === 0 && t > 0.7) || (idx === 1 && t < 0.3) || (idx === 2 && t < 0.2)) {
-        let sunAlpha = 0;
-        if (idx === 1) sunAlpha = 1 - t * 0.3;
-        else if (idx === 0 && t > 0.7) sunAlpha = (t - 0.7) / 0.3;
-        else if (idx === 1 && t < 0.3) sunAlpha = 1 - t / 0.3 * 0.7;
-        else if (idx === 2 && t < 0.2) sunAlpha = 1 - t / 0.2;
-
-        if (sunAlpha > 0) {
-            ctx.globalAlpha = sunAlpha;
-            const sunY = 280 - cameraY * 0.03;
-
-            // 太阳光晕（多层）
-            for (let r = 120; r > 0; r -= 20) {
-                const a = 0.15 * (1 - r / 120);
-                ctx.fillStyle = `rgba(255, 160, 50, ${a})`;
-                ctx.beginPath(); ctx.arc(200, sunY, r, 0, Math.PI * 2); ctx.fill();
-            }
-
-            // 太阳本体
-            const sunGrad = ctx.createRadialGradient(200, sunY, 5, 200, sunY, 35);
-            sunGrad.addColorStop(0, '#FFF9C4');
-            sunGrad.addColorStop(0.5, '#FFD54F');
-            sunGrad.addColorStop(1, '#FF8F00');
-            ctx.fillStyle = sunGrad;
-            ctx.beginPath(); ctx.arc(200, sunY, 35, 0, Math.PI * 2); ctx.fill();
-
-            // 水面/地面（深色）
-            const waterY = 520;
-            ctx.fillStyle = '#3E2723';
-            ctx.fillRect(0, waterY, GAME_WIDTH, GAME_HEIGHT - waterY + 50);
-
-            // 太阳倒影
-            ctx.fillStyle = 'rgba(255, 160, 50, 0.15)';
-            ctx.beginPath(); ctx.ellipse(200, waterY + 15, 30, 8, 0, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = 'rgba(255, 160, 50, 0.08)';
-            ctx.beginPath(); ctx.ellipse(200, waterY + 28, 22, 5, 0, 0, Math.PI * 2); ctx.fill();
-
-            // 远处暗色山丘剪影
-            ctx.fillStyle = '#5D4037';
-            ctx.beginPath();
-            ctx.moveTo(0, waterY);
-            ctx.bezierCurveTo(60, waterY - 25, 140, waterY - 10, 200, waterY - 35);
-            ctx.bezierCurveTo(260, waterY - 50, 320, waterY - 20, 400, waterY - 15);
-            ctx.lineTo(400, waterY + 50); ctx.lineTo(0, waterY + 50); ctx.closePath(); ctx.fill();
-
-            ctx.globalAlpha = 1;
-        }
-    }
-
-    // ========== 3. 月夜 (200-300m) ==========
-    if ((idx === 2) || (idx === 1 && t > 0.7) || (idx === 2 && t < 0.3) || (idx === 3 && t < 0.2)) {
-        let moonAlpha = 0;
-        if (idx === 2) moonAlpha = 0.9 + t * 0.1;
-        else if (idx === 1 && t > 0.7) moonAlpha = (t - 0.7) / 0.3 * 0.9;
-        else if (idx === 2 && t < 0.3) moonAlpha = 0.9 + (1 - t / 0.3) * 0.1;
-        else if (idx === 3 && t < 0.2) moonAlpha = 1 - t / 0.2;
-
-        if (moonAlpha > 0) {
-            ctx.globalAlpha = moonAlpha;
-            const moonY = 160 - cameraY * 0.02;
-
-            // 月亮光晕
-            const moonGlow = ctx.createRadialGradient(320, moonY, 10, 320, moonY, 70);
-            moonGlow.addColorStop(0, 'rgba(255, 255, 240, 0.25)');
-            moonGlow.addColorStop(0.5, 'rgba(255, 255, 240, 0.08)');
-            moonGlow.addColorStop(1, 'rgba(255, 255, 240, 0)');
-            ctx.fillStyle = moonGlow;
-            ctx.beginPath(); ctx.arc(320, moonY, 70, 0, Math.PI * 2); ctx.fill();
-
-            // 月亮
-            ctx.fillStyle = '#FFFDE7';
-            ctx.beginPath(); ctx.arc(320, moonY, 22, 0, Math.PI * 2); ctx.fill();
-            // 陨石坑
-            ctx.fillStyle = 'rgba(200,200,180,0.25)';
-            ctx.beginPath(); ctx.arc(314, moonY - 5, 4, 0, Math.PI * 2); ctx.fill();
-            ctx.beginPath(); ctx.arc(326, moonY + 6, 3, 0, Math.PI * 2); ctx.fill();
-            ctx.beginPath(); ctx.arc(318, moonY + 8, 2.5, 0, Math.PI * 2); ctx.fill();
-
-            // 山丘剪影
-            const hillY = 530;
-            ctx.fillStyle = '#1A237E';
-            ctx.beginPath();
-            ctx.moveTo(0, hillY);
-            ctx.bezierCurveTo(50, hillY - 40, 130, hillY - 60, 200, hillY - 45);
-            ctx.bezierCurveTo(270, hillY - 30, 340, hillY - 55, 400, hillY - 35);
-            ctx.lineTo(400, hillY + 50); ctx.lineTo(0, hillY + 50); ctx.closePath(); ctx.fill();
-
-            // 水面倒影
-            ctx.fillStyle = 'rgba(255,255,240,0.06)';
-            ctx.beginPath(); ctx.ellipse(320, hillY + 12, 18, 5, 0, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = 'rgba(255,255,240,0.03)';
-            ctx.beginPath(); ctx.ellipse(320, hillY + 22, 12, 3, 0, 0, Math.PI * 2); ctx.fill();
-
-            ctx.globalAlpha = 1;
-        }
-    }
-
-    // ========== 4. 雷暴 (300-400m) ==========
-    if (lightningFlash > 0 && ((idx === 3) || (idx === 2 && t > 0.8) || (idx === 3 && t < 0.2))) {
-        ctx.globalAlpha = lightningFlash / 20;
-        ctx.fillStyle = '#FFF';
+    // 闪电效果（叠加在所有场景之上）
+    if (lightningFlash > 0) {
+        ctx.globalAlpha = (lightningFlash / 20) * a[3];
+        ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-        
-        // 闪电
         ctx.strokeStyle = '#FFF';
         ctx.lineWidth = 2.5;
         ctx.shadowColor = '#FFF'; ctx.shadowBlur = 20;
@@ -646,167 +920,6 @@ function drawSceneBackground(mix) {
         }
         ctx.stroke();
         ctx.shadowBlur = 0; ctx.globalAlpha = 1;
-    }
-
-    // 厚重乌云（雷暴层常驻）
-    if (idx === 3 || (idx === 2 && t > 0.7) || (idx === 3 && t < 0.3) || (idx === 4 && t < 0.2)) {
-        let cloudAlpha = 0;
-        if (idx === 3) cloudAlpha = 0.85;
-        else if (idx === 2 && t > 0.7) cloudAlpha = (t - 0.7) / 0.3 * 0.85;
-        else if (idx === 3 && t < 0.3) cloudAlpha = 0.85 * (1 - t / 0.3);
-        else if (idx === 4 && t < 0.2) cloudAlpha = 0.85 * (1 - t / 0.2);
-
-        if (cloudAlpha > 0) {
-            ctx.globalAlpha = cloudAlpha;
-            // 多层厚重云
-            const stormClouds = [
-                {x: 50, y: 100, w: 140, h: 50}, {x: 180, y: 80, w: 160, h: 60},
-                {x: 300, y: 120, w: 120, h: 45}, {x: -20, y: 180, w: 180, h: 55},
-                {x: 240, y: 200, w: 150, h: 50}, {x: 100, y: 250, w: 130, h: 40}
-            ];
-            ctx.fillStyle = '#37474F';
-            stormClouds.forEach(c => {
-                ctx.beginPath(); ctx.ellipse(c.x, c.y - cameraY * 0.05, c.w/2, c.h/2, 0, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#455A64';
-                ctx.beginPath(); ctx.ellipse(c.x + 15, c.y - 10 - cameraY * 0.05, c.w/2.5, c.h/2.8, 0, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#37474F';
-            });
-            ctx.globalAlpha = 1;
-        }
-    }
-
-    // 雨滴
-    if (idx === 3 && t > 0.1 && t < 0.9) {
-        ctx.strokeStyle = 'rgba(176, 190, 197, 0.35)';
-        ctx.lineWidth = 1.2;
-        rainDrops.forEach(drop => {
-            let dy = drop.y - cameraY * 0.4;
-            if (dy < -20) { drop.y += GAME_HEIGHT + 40; dy = drop.y - cameraY * 0.4; }
-            if (dy > GAME_HEIGHT + 20) { drop.y -= GAME_HEIGHT + 40; dy = drop.y - cameraY * 0.4; }
-            ctx.beginPath(); ctx.moveTo(drop.x, dy); ctx.lineTo(drop.x - 1.5, dy + drop.len); ctx.stroke();
-            drop.y += drop.speed;
-        });
-    }
-
-    // ========== 5. 近地轨道 (400-500m) ==========
-    if ((idx === 4) || (idx === 3 && t > 0.7) || (idx === 4 && t < 0.3)) {
-        let earthAlpha = 0;
-        if (idx === 4) earthAlpha = 0.7 + t * 0.3;
-        else if (idx === 3 && t > 0.7) earthAlpha = (t - 0.7) / 0.3 * 0.7;
-        else if (idx === 4 && t < 0.3) earthAlpha = 0.7 + (1 - t / 0.3) * 0.3;
-
-        if (earthAlpha > 0) {
-            ctx.globalAlpha = earthAlpha;
-            const earthY = 850 + (idx === 4 ? t * 80 : 0);
-
-            // 地球大气层辉光（蓝色）
-            const atmoGlow = ctx.createRadialGradient(200, earthY, 170, 200, earthY, 260);
-            atmoGlow.addColorStop(0, 'rgba(66, 165, 245, 0.5)');
-            atmoGlow.addColorStop(0.6, 'rgba(66, 165, 245, 0.2)');
-            atmoGlow.addColorStop(1, 'rgba(66, 165, 245, 0)');
-            ctx.fillStyle = atmoGlow;
-            ctx.beginPath(); ctx.arc(200, earthY, 260, 0, Math.PI * 2); ctx.fill();
-
-            // 地球本体
-            ctx.fillStyle = '#1565C0';
-            ctx.beginPath(); ctx.arc(200, earthY, 190, 0, Math.PI * 2); ctx.fill();
-
-            // 大陆（绿色色块）
-            ctx.fillStyle = '#2E7D32';
-            ctx.beginPath(); ctx.arc(160, earthY - 40, 55, 0, Math.PI * 2); ctx.fill();
-            ctx.beginPath(); ctx.arc(240, earthY + 20, 45, 0, Math.PI * 2); ctx.fill();
-            ctx.beginPath(); ctx.arc(200, earthY + 70, 40, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = '#388E3C';
-            ctx.beginPath(); ctx.arc(130, earthY + 30, 35, 0, Math.PI * 2); ctx.fill();
-
-            // 云层（白色覆盖）
-            ctx.fillStyle = 'rgba(255,255,255,0.25)';
-            ctx.beginPath(); ctx.arc(180, earthY - 60, 40, 0, Math.PI * 2); ctx.fill();
-            ctx.beginPath(); ctx.arc(220, earthY - 10, 30, 0, Math.PI * 2); ctx.fill();
-            ctx.beginPath(); ctx.arc(150, earthY + 50, 35, 0, Math.PI * 2); ctx.fill();
-
-            // 晨昏线（大气散射）
-            ctx.fillStyle = 'rgba(255, 200, 100, 0.15)';
-            ctx.beginPath(); ctx.arc(200, earthY, 195, Math.PI * 0.7, Math.PI * 1.3); ctx.fill();
-
-            ctx.globalAlpha = 1;
-        }
-    }
-
-    // ========== 6. 外太空 (500m+) ==========
-    if (idx >= 4) {
-        const spaceAlpha = idx === 4 ? t : 1;
-        if (spaceAlpha > 0) {
-            ctx.globalAlpha = spaceAlpha;
-
-            // 星云（紫色雾状）
-            const nebulaGrad = ctx.createRadialGradient(100, 200, 20, 100, 200, 180);
-            nebulaGrad.addColorStop(0, 'rgba(186, 104, 200, 0.12)');
-            nebulaGrad.addColorStop(1, 'rgba(186, 104, 200, 0)');
-            ctx.fillStyle = nebulaGrad;
-            ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-
-            const nebulaGrad2 = ctx.createRadialGradient(320, 450, 30, 320, 450, 200);
-            nebulaGrad2.addColorStop(0, 'rgba(100, 181, 246, 0.1)');
-            nebulaGrad2.addColorStop(1, 'rgba(100, 181, 246, 0)');
-            ctx.fillStyle = nebulaGrad2;
-            ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-
-            // 小行星带
-            const asteroids = [
-                {x: 80, y: 150, r: 12}, {x: 340, y: 280, r: 18}, {x: 60, y: 420, r: 10},
-                {x: 350, y: 120, r: 8}, {x: 200, y: 550, r: 22}, {x: 120, y: 620, r: 14},
-                {x: 300, y: 480, r: 9}, {x: 40, y: 300, r: 11}, {x: 370, y: 380, r: 13}
-            ];
-            asteroids.forEach(a => {
-                const ay = a.y - cameraY * 0.08;
-                if (ay < -50 || ay > GAME_HEIGHT + 50) return;
-                ctx.fillStyle = '#5C6BC0';
-                ctx.beginPath();
-                ctx.moveTo(a.x, ay - a.r);
-                ctx.lineTo(a.x + a.r * 0.8, ay - a.r * 0.3);
-                ctx.lineTo(a.x + a.r * 0.6, ay + a.r * 0.7);
-                ctx.lineTo(a.x - a.r * 0.4, ay + a.r * 0.9);
-                ctx.lineTo(a.x - a.r * 0.9, ay + a.r * 0.1);
-                ctx.closePath(); ctx.fill();
-                // 陨石坑
-                ctx.fillStyle = 'rgba(0,0,0,0.2)';
-                ctx.beginPath(); ctx.arc(a.x - 2, ay - 2, a.r * 0.25, 0, Math.PI * 2); ctx.fill();
-                ctx.beginPath(); ctx.arc(a.x + 4, ay + 3, a.r * 0.2, 0, Math.PI * 2); ctx.fill();
-            });
-
-            // 更多星星
-            stars.forEach(star => {
-                const sy = star.y - cameraY;
-                if (sy < -50 || sy > GAME_HEIGHT + 50) return;
-                const alpha = Math.max(0.2, Math.min(1, star.brightness)) * (mix.s2.starBright || 1.5);
-                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-                // 十字星光
-                ctx.fillRect(star.x - star.size, sy - 0.5, star.size * 2, 1);
-                ctx.fillRect(star.x - 0.5, sy - star.size, 1, star.size * 2);
-                ctx.beginPath(); ctx.arc(star.x, sy, star.size * 0.6, 0, Math.PI * 2); ctx.fill();
-            });
-
-            ctx.globalAlpha = 1;
-        }
-    }
-
-    // 普通云层（根据场景调整）
-    const cloudOp = lerp(s1.cloudOp || 0, s2.cloudOp || 0, t);
-    if (cloudOp > 0.01 && idx !== 3) {
-        clouds.forEach(cloud => {
-            const cy = cloud.y - cameraY;
-            if (cy < -100 || cy > GAME_HEIGHT + 100) return;
-            const cAlpha = cloud.opacity * cloudOp;
-            if (cloud.dark) ctx.fillStyle = `rgba(120, 130, 140, ${cAlpha})`;
-            else ctx.fillStyle = `rgba(255, 255, 255, ${cAlpha})`;
-            ctx.beginPath();
-            ctx.ellipse(cloud.x, cy, cloud.width / 2, cloud.width / 6, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.ellipse(cloud.x - cloud.width * 0.25, cy - 4, cloud.width / 3.5, cloud.width / 7, 0, 0, Math.PI * 2);
-            ctx.fill();
-        });
     }
 
     ctx.restore();
@@ -998,6 +1111,7 @@ function drawObjects() {
     ctx.restore();
 }
 
+// ========== 主绘制 ==========
 function draw() {
     const mix = getSceneMix(height);
     drawSceneBackground(mix);
@@ -1005,8 +1119,10 @@ function draw() {
     drawKittyAndBalloon();
 }
 
+// ========== 游戏循环 ==========
 function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
 
+// ========== 输入处理 ==========
 function handleStart(e) {
     if (gameState !== 'playing') return;
     e.preventDefault(); isPressing = true; isTouching = true;
