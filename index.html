@@ -140,7 +140,7 @@ function getSceneMix(h) {
 
 // ========== 游戏状态 ==========
 let gameState = 'menu', isPressing = false, score = 0;
-let bestScore = localStorage.getItem('kittyBalloonBest2') || 0;
+let bestScore = localStorage.getItem('kittyBalloonBest3') || 0;
 let combo = 0, comboTimer = 0;
 
 const balloon = {
@@ -178,44 +178,14 @@ const BALLOON_SCREEN_Y = 400;
 let lives = 3, maxLives = 3, invincibleTime = 0;
 const INVINCIBLE_DURATION = 150;
 
-let obstacles = [], particles = [], coins = [], stars = [], clouds = [], spawnTimer = 0, difficulty = 1;
+let obstacles = [], particles = [], coins = [], spawnTimer = 0, difficulty = 1;
 let touchX = 200, isTouching = false;
 
-let lightningTimer = 0, lightningFlash = 0, rainDrops = [];
-let houseX = 120, treeX = 280;
+let lightningTimer = 0, lightningFlash = 0;
 
-function initStars() {
-    stars = [];
-    for (let i = 0; i < 150; i++) {
-        stars.push({
-            x: Math.random() * GAME_WIDTH,
-            y: Math.random() * 6000 - 3000,
-            size: Math.random() * 2.5 + 0.5,
-            brightness: Math.random(),
-            speed: Math.random() * 0.3 + 0.05,
-            twinkleSpeed: Math.random() * 0.02 + 0.005
-        });
-    }
-}
-function initClouds() {
-    clouds = [];
-    for (let i = 0; i < 10; i++) {
-        clouds.push({
-            x: Math.random() * GAME_WIDTH,
-            y: Math.random() * 4000 - 2000,
-            width: 60 + Math.random() * 100,
-            speed: 0.1 + Math.random() * 0.3,
-            opacity: 0.05 + Math.random() * 0.1,
-            dark: Math.random() > 0.5
-        });
-    }
-}
-function initRain() {
-    rainDrops = [];
-    for (let i = 0; i < 60; i++) {
-        rainDrops.push({ x: Math.random() * GAME_WIDTH, y: Math.random() * GAME_HEIGHT, speed: 6 + Math.random() * 6, len: 8 + Math.random() * 12 });
-    }
-}
+function initStars() {}
+function initClouds() {}
+function initRain() {}
 
 function spawnObstacle() {
     const types = ['spike','saw','laser','missile','bird'];
@@ -277,7 +247,6 @@ function resetGame() {
     touchX = 200; isTouching = false;
     obstacles = []; particles = []; coins = [];
     spawnTimer = 0;
-    initStars(); initClouds(); initRain();
     for (let i = 0; i < 3; i++) { spawnObstacle(); obstacles[obstacles.length - 1].y = -120 - i * 200; }
     spawnCoins(); coins.forEach(c => c.y = -100);
     updateHearts();
@@ -307,7 +276,7 @@ function updateHearts() {
 }
 function gameOver() {
     gameState = 'gameover';
-    if (score > bestScore) { bestScore = score; localStorage.setItem('kittyBalloonBest2', bestScore); }
+    if (score > bestScore) { bestScore = score; localStorage.setItem('kittyBalloonBest3', bestScore); }
     document.getElementById('finalScore').textContent = Math.floor(score);
     document.getElementById('bestScore').textContent = Math.floor(bestScore);
     document.getElementById('gameOverScreen').style.display = 'flex';
@@ -398,21 +367,6 @@ function update() {
     particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.vy += p.gravity; p.life -= p.decay; p.vx *= 0.985; if (p.life <= 0) particles.splice(i, 1); });
 
     const mix = getSceneMix(height);
-    stars.forEach(star => {
-        const moveSpeed = isPressing ? star.speed * speedMultiplier * 1.5 : star.speed * 0.3;
-        star.y += moveSpeed;
-        star.brightness += Math.sin(Date.now() * star.twinkleSpeed) * 0.008;
-        if (star.y > cameraY + 900) { star.y = cameraY - 300; star.x = Math.random() * GAME_WIDTH; }
-    });
-    clouds.forEach(cloud => {
-        cloud.x += wind.current * 0.2;
-        const moveSpeed = isPressing ? cloud.speed * speedMultiplier : cloud.speed * 0.2;
-        cloud.y += moveSpeed;
-        if (cloud.x > GAME_WIDTH + 120) cloud.x = -120;
-        if (cloud.x < -120) cloud.x = GAME_WIDTH + 120;
-        if (cloud.y > cameraY + 900) { cloud.y = cameraY - 400; cloud.x = Math.random() * GAME_WIDTH; }
-    });
-
     if (mix.idx === 3 || (mix.idx === 2 && mix.t > 0.8) || (mix.idx === 3 && mix.t < 0.2)) {
         lightningTimer++;
         if (lightningTimer > 40 + Math.random() * 100) {
@@ -436,88 +390,115 @@ function update() {
     document.getElementById('windText').textContent = getWindDescription(wind.current);
 }
 
-// ========== 1:1 场景还原绘制 ==========
-
-// 场景1：家门口（参考图1：明亮蓝天、粉紫渐变、绿色尖山、彩色气球、光点、斜线）
-function drawScene1(alpha, height) {
+// ========== 场景 1：家门口（0-100m）— 参考图 1 还原 ==========
+function drawScene1(alpha, h) {
     if (alpha <= 0.01) return;
     ctx.globalAlpha = alpha;
-    const shift = height * 3.5;
+    const shift = h * 3.5;
 
-    // 天空：天蓝 → 淡紫 → 淡粉
+    // 天空：柔和天蓝 → 灰紫 → 米杏
     const g1 = ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT);
-    g1.addColorStop(0, '#4FC3F7');
-    g1.addColorStop(0.5, '#B39DDB');
-    g1.addColorStop(1, '#F8BBD0');
+    g1.addColorStop(0, '#8ECAE6');
+    g1.addColorStop(0.45, '#B8B8D1');
+    g1.addColorStop(1, '#F0E6D3');
     ctx.fillStyle = g1;
     ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-    // 斜向光线（右上到左下）
-    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-    ctx.lineWidth = 1.5;
-    for (let i = 0; i < 6; i++) {
+    // 阳光射线（3 条斜向贝塞尔带状，极淡）
+    ctx.fillStyle = 'rgba(255,250,230,0.06)';
+    for (let i = 0; i < 3; i++) {
         ctx.beginPath();
-        ctx.moveTo(360 + i * 25, 0);
-        ctx.lineTo(60 + i * 25, GAME_HEIGHT);
-        ctx.stroke();
+        const ox = 280 + i * 40;
+        ctx.moveTo(ox, 0);
+        ctx.lineTo(ox + 120, 0);
+        ctx.bezierCurveTo(ox + 80, 250, ox - 40, 500, ox - 100, GAME_HEIGHT);
+        ctx.lineTo(ox - 160, GAME_HEIGHT);
+        ctx.bezierCurveTo(ox - 80, 500, ox + 40, 250, ox - 40, 0);
+        ctx.closePath(); ctx.fill();
     }
 
-    // 光点（bokeh）
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    const bokeh = [[60,120],[180,80],[320,160],[90,280],[250,220],[350,300],[140,380],[300,100],[40,420],[220,340]];
+    // 光斑 bokeh（18 个柔和椭圆）
+    const bokeh = [
+        [45,90,6],[120,60,4],[280,110,8],[340,80,5],[80,200,7],[220,170,4],
+        [310,240,9],[150,280,5],[260,320,6],[60,380,4],[180,360,7],[330,400,5],
+        [100,450,8],[250,480,4],[370,440,6],[200,520,5],[140,580,7],[290,560,4]
+    ];
     bokeh.forEach(b => {
-        ctx.beginPath();
-        ctx.arc(b[0], b[1] + shift * 0.1, 2 + (b[0] % 3) * 0.8, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.fillStyle = `rgba(255,255,240,${0.15 + b[2] * 0.02})`;
+        ctx.beginPath(); ctx.ellipse(b[0], b[1] + shift * 0.08, b[2], b[2] * 0.9, 0, 0, Math.PI * 2); ctx.fill();
     });
 
-    // 远山（淡绿）
-    ctx.fillStyle = '#81C784';
-    ctx.beginPath();
-    ctx.moveTo(0, 500 + shift);
-    ctx.lineTo(50, 460 + shift); ctx.lineTo(100, 485 + shift);
-    ctx.lineTo(150, 445 + shift); ctx.lineTo(210, 470 + shift);
-    ctx.lineTo(270, 440 + shift); ctx.lineTo(330, 465 + shift);
-    ctx.lineTo(400, 450 + shift); ctx.lineTo(400, 700 + shift); ctx.lineTo(0, 700 + shift);
-    ctx.closePath(); ctx.fill();
+    // 柔和云朵（3 朵）
+    const clouds = [[100,140,70,22],[260,100,90,28],[340,180,60,18]];
+    clouds.forEach(c => {
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        ctx.beginPath(); ctx.ellipse(c[0], c[1] + shift * 0.05, c[2], c[3], 0, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(c[0] - 25, c[1] + 5 + shift * 0.05, c[2] * 0.6, c[3] * 0.8, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(c[0] + 25, c[1] + 3 + shift * 0.05, c[2] * 0.55, c[3] * 0.75, 0, 0, Math.PI * 2); ctx.fill();
+    });
 
-    // 中山（中绿）
-    ctx.fillStyle = '#66BB6A';
+    // 远山（第 1 层，灰蓝紫，极淡）
+    ctx.fillStyle = '#9AA5B8';
     ctx.beginPath();
-    ctx.moveTo(0, 530 + shift);
-    ctx.lineTo(70, 490 + shift); ctx.lineTo(140, 520 + shift);
-    ctx.lineTo(200, 480 + shift); ctx.lineTo(280, 510 + shift);
-    ctx.lineTo(340, 485 + shift); ctx.lineTo(400, 505 + shift);
-    ctx.lineTo(400, 700 + shift); ctx.lineTo(0, 700 + shift);
-    ctx.closePath(); ctx.fill();
+    ctx.moveTo(0, 430 + shift);
+    ctx.bezierCurveTo(50, 400 + shift, 110, 415 + shift, 160, 395 + shift);
+    ctx.bezierCurveTo(220, 375 + shift, 280, 405 + shift, 340, 390 + shift);
+    ctx.bezierCurveTo(380, 380 + shift, 400, 400 + shift, 400, 430 + shift);
+    ctx.lineTo(400, 700 + shift); ctx.lineTo(0, 700 + shift); ctx.closePath(); ctx.fill();
 
-    // 近山（深绿）
-    ctx.fillStyle = '#43A047';
+    // 中山（第 2 层，灰绿）
+    ctx.fillStyle = '#8A9A7A';
     ctx.beginPath();
-    ctx.moveTo(0, 560 + shift);
-    ctx.lineTo(80, 530 + shift); ctx.lineTo(160, 560 + shift);
-    ctx.lineTo(240, 520 + shift); ctx.lineTo(320, 550 + shift);
-    ctx.lineTo(400, 530 + shift); ctx.lineTo(400, 700 + shift); ctx.lineTo(0, 700 + shift);
-    ctx.closePath(); ctx.fill();
+    ctx.moveTo(0, 480 + shift);
+    ctx.bezierCurveTo(60, 450 + shift, 130, 470 + shift, 190, 440 + shift);
+    ctx.bezierCurveTo(250, 415 + shift, 310, 455 + shift, 360, 435 + shift);
+    ctx.bezierCurveTo(390, 425 + shift, 400, 450 + shift, 400, 480 + shift);
+    ctx.lineTo(400, 700 + shift); ctx.lineTo(0, 700 + shift); ctx.closePath(); ctx.fill();
 
-    // 地面
-    ctx.fillStyle = '#2E7D32';
+    // 近山（第 3 层，深灰绿）
+    ctx.fillStyle = '#6A7A5A';
+    ctx.beginPath();
+    ctx.moveTo(0, 540 + shift);
+    ctx.bezierCurveTo(70, 510 + shift, 150, 535 + shift, 220, 505 + shift);
+    ctx.bezierCurveTo(290, 480 + shift, 350, 520 + shift, 400, 495 + shift);
+    ctx.lineTo(400, 700 + shift); ctx.lineTo(0, 700 + shift); ctx.closePath(); ctx.fill();
+
+    // 山丘上的树林剪影（15 个小圆弧）
+    ctx.fillStyle = '#5A6A4A';
+    const trees = [30,70,110,160,210,260,300,340,380,50,130,190,250,320,370];
+    trees.forEach(tx => {
+        const ty = 535 + shift - Math.abs(Math.sin(tx * 0.1)) * 15;
+        ctx.beginPath(); ctx.arc(tx, ty, 3 + Math.sin(tx * 0.3) * 2, 0, Math.PI * 2); ctx.fill();
+    });
+
+    // 地面（深橄榄褐）
+    ctx.fillStyle = '#5A4A3A';
     ctx.fillRect(0, 600 + shift, GAME_WIDTH, 200);
 
-    // 彩色气球（带轻微摆动）
+    // 草丛纹理（20 个随机小圆弧）
+    ctx.fillStyle = '#4A5A3A';
+    for (let i = 0; i < 20; i++) {
+        const gx = i * 22 + 8;
+        ctx.beginPath(); ctx.arc(gx, 605 + shift + (i % 3) * 2, 3 + (i % 4), Math.PI, 0); ctx.fill();
+    }
+
+    // 漂浮气球（9 个 pastel 色椭圆气球+曲线绳）
     const time = Date.now() * 0.001;
     const balloons = [
-        {x: 70, y: 180, c: '#F44336', s: 1.0}, {x: 130, y: 140, c: '#FFEB3B', s: 0.9},
-        {x: 195, y: 200, c: '#2196F3', s: 1.1}, {x: 260, y: 160, c: '#4CAF50', s: 0.95},
-        {x: 325, y: 220, c: '#9C27B0', s: 1.05}, {x: 160, y: 260, c: '#FF9800', s: 0.85}
+        {x: 55, y: 150, c: '#F4C2C2', s: 1.0}, {x: 115, y: 110, c: '#C2D4F4', s: 0.9},
+        {x: 175, y: 170, c: '#F4E8C2', s: 1.1}, {x: 235, y: 130, c: '#D4C2F4', s: 0.95},
+        {x: 295, y: 190, c: '#C2E8D4', s: 1.05}, {x: 355, y: 145, c: '#F4D4C2', s: 0.85},
+        {x: 85, y: 230, c: '#E8C2D4', s: 0.9}, {x: 200, y: 250, c: '#D4E8C2', s: 1.0},
+        {x: 325, y: 270, c: '#C2E0E8', s: 0.95}
     ];
     balloons.forEach(b => {
-        const by = b.y + shift * 0.3 + Math.sin(time + b.x) * 4;
+        const by = b.y + shift * 0.25 + Math.sin(time + b.x * 0.05) * 5;
+        // 气球本体
         ctx.fillStyle = b.c;
         ctx.beginPath();
-        ctx.ellipse(b.x, by, 11 * b.s, 14 * b.s, 0, 0, Math.PI * 2);
+        ctx.ellipse(b.x, by, 10 * b.s, 13 * b.s, 0, 0, Math.PI * 2);
         ctx.fill();
-        // 高光
+        // 柔和高光
         ctx.fillStyle = 'rgba(255,255,255,0.35)';
         ctx.beginPath();
         ctx.ellipse(b.x - 3, by - 4, 3.5 * b.s, 4.5 * b.s, -0.3, 0, Math.PI * 2);
@@ -525,355 +506,559 @@ function drawScene1(alpha, height) {
         // 结
         ctx.fillStyle = b.c;
         ctx.beginPath();
-        ctx.moveTo(b.x - 2.5, by + 13 * b.s);
-        ctx.lineTo(b.x + 2.5, by + 13 * b.s);
-        ctx.lineTo(b.x, by + 17 * b.s);
+        ctx.moveTo(b.x - 2, by + 12 * b.s);
+        ctx.lineTo(b.x + 2, by + 12 * b.s);
+        ctx.lineTo(b.x, by + 15 * b.s);
         ctx.closePath(); ctx.fill();
-        // 绳
-        ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+        // 绳子（贝塞尔曲线）
+        ctx.strokeStyle = 'rgba(160,140,120,0.4)';
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(b.x, by + 17 * b.s);
-        ctx.quadraticCurveTo(b.x + 4, by + 40, b.x + Math.sin(time + b.x * 2) * 3, by + 65);
+        ctx.moveTo(b.x, by + 15 * b.s);
+        ctx.quadraticCurveTo(b.x + 3 + Math.sin(time * 1.5 + b.x) * 4, by + 45, b.x + Math.sin(time + b.x) * 2, by + 70);
         ctx.stroke();
     });
 
+    // 底部暗角覆盖
+    const darkGrad = ctx.createLinearGradient(0, 580 + shift, 0, GAME_HEIGHT + shift);
+    darkGrad.addColorStop(0, 'rgba(80,70,60,0)');
+    darkGrad.addColorStop(1, 'rgba(80,70,60,0.2)');
+    ctx.fillStyle = darkGrad;
+    ctx.fillRect(0, 580 + shift, GAME_WIDTH, GAME_HEIGHT - 580);
+
     ctx.globalAlpha = 1;
 }
 
-// 场景2：夕阳（参考图2：暖橙天空、巨大太阳、暗山剪影、水面反射、暗云）
-function drawScene2(alpha, height) {
+// ========== 场景 2：夕阳云层（100-200m）— 参考图 2 还原 ==========
+function drawScene2(alpha, h) {
     if (alpha <= 0.01) return;
     ctx.globalAlpha = alpha;
-    const shift = (height - 100) * 3.5;
+    const shift = (h - 100) * 3.5;
 
-    // 天空：深棕 → 深橙 → 亮橙 → 金黄 → 暗棕
+    // 天空：深棕 → 暗橙棕 → 柔和棕黄
     const g2 = ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT);
-    g2.addColorStop(0, '#6D4C41');
-    g2.addColorStop(0.2, '#8D6E63');
-    g2.addColorStop(0.4, '#BF360C');
-    g2.addColorStop(0.6, '#FF6F00');
-    g2.addColorStop(0.8, '#FFB300');
-    g2.addColorStop(1, '#3E2723');
+    g2.addColorStop(0, '#3E2B1F');
+    g2.addColorStop(0.35, '#6B4423');
+    g2.addColorStop(0.7, '#8B5A3A');
+    g2.addColorStop(1, '#A67C52');
     ctx.fillStyle = g2;
     ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-    // 暗云（画面上部）
-    ctx.fillStyle = 'rgba(62, 39, 35, 0.5)';
-    ctx.beginPath(); ctx.ellipse(100, 90 + shift * 0.2, 90, 30, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(300, 70 + shift * 0.2, 110, 35, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(200, 130 + shift * 0.2, 130, 40, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(350, 150 + shift * 0.2, 80, 25, 0, 0, Math.PI * 2); ctx.fill();
+    // 顶层暗云（4 朵厚重积云）
+    const topClouds = [
+        {x: 80, y: 60, rx: 75, ry: 28}, {x: 220, y: 45, rx: 90, ry: 32},
+        {x: 340, y: 75, rx: 65, ry: 24}, {x: 30, y: 100, rx: 55, ry: 22}
+    ];
+    topClouds.forEach(c => {
+        ctx.fillStyle = '#2E1F16';
+        ctx.beginPath(); ctx.ellipse(c.x, c.y + shift * 0.08, c.rx, c.ry, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#3E2B1F';
+        ctx.beginPath(); ctx.ellipse(c.x + 10, c.y - 5 + shift * 0.08, c.rx * 0.8, c.ry * 0.9, 0, 0, Math.PI * 2); ctx.fill();
+    });
 
-    // 山丘剪影（暗棕色）
-    ctx.fillStyle = '#281A14';
-    ctx.beginPath();
-    ctx.moveTo(0, 430 + shift);
-    ctx.lineTo(40, 390 + shift); ctx.lineTo(100, 415 + shift);
-    ctx.lineTo(160, 375 + shift); ctx.lineTo(230, 405 + shift);
-    ctx.lineTo(290, 370 + shift); ctx.lineTo(350, 400 + shift);
-    ctx.lineTo(400, 385 + shift); ctx.lineTo(400, 700 + shift); ctx.lineTo(0, 700 + shift);
-    ctx.closePath(); ctx.fill();
+    // 中层云（5 朵蓬松云，暗棕）
+    const midClouds = [
+        {x: 50, y: 140, rx: 85, ry: 35}, {x: 180, y: 120, rx: 110, ry: 42},
+        {x: 320, y: 155, rx: 95, ry: 38}, {x: 380, y: 110, rx: 70, ry: 30},
+        {x: 130, y: 190, rx: 120, ry: 45}
+    ];
+    midClouds.forEach(c => {
+        ctx.fillStyle = '#4A3728';
+        ctx.beginPath(); ctx.ellipse(c.x, c.y + shift * 0.06, c.rx, c.ry, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#5C4033';
+        ctx.beginPath(); ctx.ellipse(c.x - 15, c.y - 8 + shift * 0.06, c.rx * 0.7, c.ry * 0.85, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#4A3728';
+        ctx.beginPath(); ctx.ellipse(c.x + 20, c.y + 5 + shift * 0.06, c.rx * 0.6, c.ry * 0.7, 0, 0, Math.PI * 2); ctx.fill();
+    });
 
-    // 太阳（巨大，位于中下部）
-    const sunY = 470 + shift;
+    // 太阳（大圆盘+3 层柔和光晕）
+    const sunY = 480 + shift;
     // 外层光晕
-    const sGlow = ctx.createRadialGradient(200, sunY, 20, 200, sunY, 120);
-    sGlow.addColorStop(0, 'rgba(255, 240, 150, 0.8)');
-    sGlow.addColorStop(0.3, 'rgba(255, 200, 50, 0.5)');
-    sGlow.addColorStop(0.6, 'rgba(255, 140, 0, 0.2)');
-    sGlow.addColorStop(1, 'rgba(255, 100, 0, 0)');
-    ctx.fillStyle = sGlow;
-    ctx.beginPath(); ctx.arc(200, sunY, 120, 0, Math.PI * 2); ctx.fill();
-
+    const gSun3 = ctx.createRadialGradient(200, sunY, 30, 200, sunY, 140);
+    gSun3.addColorStop(0, 'rgba(212,194,138,0.12)');
+    gSun3.addColorStop(1, 'rgba(212,194,138,0)');
+    ctx.fillStyle = gSun3;
+    ctx.beginPath(); ctx.arc(200, sunY, 140, 0, Math.PI * 2); ctx.fill();
+    // 中层光晕
+    const gSun2 = ctx.createRadialGradient(200, sunY, 20, 200, sunY, 90);
+    gSun2.addColorStop(0, 'rgba(212,194,138,0.08)');
+    gSun2.addColorStop(1, 'rgba(212,194,138,0)');
+    ctx.fillStyle = gSun2;
+    ctx.beginPath(); ctx.arc(200, sunY, 90, 0, Math.PI * 2); ctx.fill();
+    // 内层光晕
+    const gSun1 = ctx.createRadialGradient(200, sunY, 15, 200, sunY, 55);
+    gSun1.addColorStop(0, 'rgba(212,194,138,0.15)');
+    gSun1.addColorStop(1, 'rgba(212,194,138,0)');
+    ctx.fillStyle = gSun1;
+    ctx.beginPath(); ctx.arc(200, sunY, 55, 0, Math.PI * 2); ctx.fill();
     // 太阳本体
-    const sCore = ctx.createRadialGradient(200, sunY, 5, 200, sunY, 38);
-    sCore.addColorStop(0, '#FFF9C4');
-    sCore.addColorStop(0.7, '#FFD54F');
-    sCore.addColorStop(1, '#FF8F00');
-    ctx.fillStyle = sCore;
-    ctx.beginPath(); ctx.arc(200, sunY, 38, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#D4C28A';
+    ctx.beginPath(); ctx.arc(200, sunY, 32, 0, Math.PI * 2); ctx.fill();
 
-    // 地面/水面
-    ctx.fillStyle = '#3E2723';
-    ctx.fillRect(0, 510 + shift, GAME_WIDTH, 200);
+    // 远山剪影（3 层柔和贝塞尔）
+    ctx.fillStyle = '#362618';
+    ctx.beginPath();
+    ctx.moveTo(0, 440 + shift);
+    ctx.bezierCurveTo(40, 410 + shift, 90, 430 + shift, 150, 405 + shift);
+    ctx.bezierCurveTo(210, 385 + shift, 270, 415 + shift, 330, 395 + shift);
+    ctx.bezierCurveTo(370, 385 + shift, 400, 405 + shift, 400, 440 + shift);
+    ctx.lineTo(400, 700 + shift); ctx.lineTo(0, 700 + shift); ctx.closePath(); ctx.fill();
 
-    // 水面反射（水平光带，中心宽两侧窄）
-    for (let i = 0; i < 10; i++) {
-        const rw = 140 - i * 12;
-        const rx = 200 - rw / 2;
-        const ry = 520 + shift + i * 10;
-        ctx.fillStyle = `rgba(255, 200, 60, ${0.18 - i * 0.015})`;
-        ctx.fillRect(rx, ry, rw, 3);
+    ctx.fillStyle = '#2A1C14';
+    ctx.beginPath();
+    ctx.moveTo(0, 470 + shift);
+    ctx.bezierCurveTo(50, 440 + shift, 120, 460 + shift, 180, 435 + shift);
+    ctx.bezierCurveTo(240, 415 + shift, 300, 445 + shift, 360, 425 + shift);
+    ctx.bezierCurveTo(390, 415 + shift, 400, 435 + shift, 400, 470 + shift);
+    ctx.lineTo(400, 700 + shift); ctx.lineTo(0, 700 + shift); ctx.closePath(); ctx.fill();
+
+    ctx.fillStyle = '#1E140E';
+    ctx.beginPath();
+    ctx.moveTo(0, 500 + shift);
+    ctx.bezierCurveTo(60, 475 + shift, 140, 495 + shift, 200, 470 + shift);
+    ctx.bezierCurveTo(260, 450 + shift, 320, 480 + shift, 380, 460 + shift);
+    ctx.bezierCurveTo(400, 455 + shift, 400, 470 + shift, 400, 500 + shift);
+    ctx.lineTo(400, 700 + shift); ctx.lineTo(0, 700 + shift); ctx.closePath(); ctx.fill();
+
+    // 水面/地面（底部 35%）
+    ctx.fillStyle = '#2E1F16';
+    ctx.fillRect(0, 520 + shift, GAME_WIDTH, 200);
+
+    // 水面波纹（水平细线）
+    ctx.strokeStyle = 'rgba(120,100,80,0.2)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 12; i++) {
+        const wy = 535 + shift + i * 12;
+        const ww = 360 - i * 22;
+        ctx.beginPath();
+        ctx.moveTo(200 - ww / 2, wy);
+        ctx.lineTo(200 + ww / 2, wy);
+        ctx.stroke();
     }
+
+    // 太阳反射（10 条水平光带，宽度递减）
+    for (let i = 0; i < 10; i++) {
+        const rw = 100 - i * 9;
+        const rx = 200 - rw / 2;
+        const ry = 530 + shift + i * 9;
+        ctx.fillStyle = `rgba(212,194,138,${0.14 - i * 0.012})`;
+        ctx.beginPath(); ctx.ellipse(rx + rw / 2, ry, rw / 2, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // 全局暖色氛围覆盖
+    ctx.fillStyle = 'rgba(166,124,82,0.06)';
+    ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
     ctx.globalAlpha = 1;
 }
 
-// 场景3：月夜（参考图3：深蓝夜空、满月、暗蓝山丘、水面、流星）
-function drawScene3(alpha, height) {
+// ========== 场景 3：月夜星空（200-300m）— 参考图 3 还原 ==========
+function drawScene3(alpha, h) {
     if (alpha <= 0.01) return;
     ctx.globalAlpha = alpha;
-    const shift = (height - 200) * 3.5;
+    const shift = (h - 200) * 3.5;
 
-    // 天空：深黑蓝 → 深蓝 → 灰蓝
+    // 天空：近黑 → 深蓝灰 → 灰蓝
     const g3 = ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT);
-    g3.addColorStop(0, '#02040A');
-    g3.addColorStop(0.3, '#0D1B2A');
-    g3.addColorStop(0.7, '#1B263B');
-    g3.addColorStop(1, '#415A77');
+    g3.addColorStop(0, '#0D1117');
+    g3.addColorStop(0.4, '#1A1F2E');
+    g3.addColorStop(1, '#2E3A52');
     ctx.fillStyle = g3;
     ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-    // 星星
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    const starsPos = [[45,70],[130,110],[310,85],[355,45],[75,200],[260,160],[185,95],[340,180],[55,320],[290,260]];
-    starsPos.forEach(s => {
-        ctx.beginPath(); ctx.arc(s[0], s[1] + shift * 0.05, 1.3, 0, Math.PI * 2); ctx.fill();
+    // 星星（25 颗，柔和）
+    const starPos = [
+        [30,50],[80,90],[140,40],[210,80],[280,35],[350,70],[40,150],[120,130],[190,170],[260,140],
+        [330,190],[70,250],[160,230],[240,260],[310,240],[50,330],[130,310],[220,340],[300,320],[370,350],
+        [90,420],[180,400],[270,430],[340,410],[20,380]
+    ];
+    starPos.forEach((s, i) => {
+        const size = 1 + (i % 4) * 0.4;
+        ctx.fillStyle = `rgba(255,255,255,${0.5 + (i % 3) * 0.15})`;
+        ctx.beginPath(); ctx.arc(s[0], s[1] + shift * 0.02, size, 0, Math.PI * 2); ctx.fill();
+        // 部分星星带十字
+        if (i % 5 === 0) {
+            ctx.strokeStyle = `rgba(255,255,255,0.2)`;
+            ctx.lineWidth = 0.6;
+            ctx.beginPath(); ctx.moveTo(s[0] - 4, s[1] + shift * 0.02); ctx.lineTo(s[0] + 4, s[1] + shift * 0.02); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(s[0], s[1] + shift * 0.02 - 4); ctx.lineTo(s[0], s[1] + shift * 0.02 + 4); ctx.stroke();
+        }
     });
 
-    // 月亮（大圆盘，偏右上）
-    const mx = 300, my = 150 + shift * 0.3;
-    // 光晕
-    const mGlow = ctx.createRadialGradient(mx, my, 25, mx, my, 80);
-    mGlow.addColorStop(0, 'rgba(254, 250, 224, 0.25)');
-    mGlow.addColorStop(1, 'rgba(254, 250, 224, 0)');
-    ctx.fillStyle = mGlow;
-    ctx.beginPath(); ctx.arc(mx, my, 80, 0, Math.PI * 2); ctx.fill();
+    // 流星（4 条斜向渐变线）
+    const meteors = [[340,30,260,100],[90,60,30,130],[380,180,300,260],[60,200,-10,280]];
+    meteors.forEach(m => {
+        const grad = ctx.createLinearGradient(m[0], m[1] + shift * 0.03, m[2], m[3] + shift * 0.03);
+        grad.addColorStop(0, 'rgba(255,255,255,0.5)');
+        grad.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.moveTo(m[0], m[1] + shift * 0.03); ctx.lineTo(m[2], m[3] + shift * 0.03); ctx.stroke();
+    });
+
+    // 月亮光晕（2 层）
+    const mx = 300, my = 140 + shift * 0.15;
+    const mGlow1 = ctx.createRadialGradient(mx, my, 20, mx, my, 70);
+    mGlow1.addColorStop(0, 'rgba(232,230,217,0.15)');
+    mGlow1.addColorStop(1, 'rgba(232,230,217,0)');
+    ctx.fillStyle = mGlow1;
+    ctx.beginPath(); ctx.arc(mx, my, 70, 0, Math.PI * 2); ctx.fill();
+
+    const mGlow2 = ctx.createRadialGradient(mx, my, 30, mx, my, 120);
+    mGlow2.addColorStop(0, 'rgba(232,230,217,0.06)');
+    mGlow2.addColorStop(1, 'rgba(232,230,217,0)');
+    ctx.fillStyle = mGlow2;
+    ctx.beginPath(); ctx.arc(mx, my, 120, 0, Math.PI * 2); ctx.fill();
 
     // 月亮本体
-    ctx.fillStyle = '#FEFAE0';
-    ctx.beginPath(); ctx.arc(mx, my, 26, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#E8E6D9';
+    ctx.beginPath(); ctx.arc(mx, my, 24, 0, Math.PI * 2); ctx.fill();
 
-    // 陨石坑（灰色圆形）
-    ctx.fillStyle = '#D6D6D6';
-    ctx.beginPath(); ctx.arc(mx - 5, my - 6, 4, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(mx + 7, my + 3, 3.5, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#E0E0E0';
-    ctx.beginPath(); ctx.arc(mx - 2, my + 8, 3, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(mx + 4, my - 3, 2.5, 0, Math.PI * 2); ctx.fill();
+    // 陨石坑（5 个，柔和灰色半透明）
+    const craters = [[-6,-7,4.5],[8,-3,3.5],[-2,6,3],[7,8,2.5],[-8,4,2]];
+    craters.forEach(c => {
+        ctx.fillStyle = 'rgba(160,160,150,0.25)';
+        ctx.beginPath(); ctx.arc(mx + c[0], my + c[1], c[2], 0, Math.PI * 2); ctx.fill();
+    });
 
-    // 山丘剪影（两层）
-    ctx.fillStyle = '#0D1B2A';
-    ctx.beginPath();
-    ctx.moveTo(0, 530 + shift);
-    ctx.bezierCurveTo(50, 510 + shift, 110, 485 + shift, 170, 505 + shift);
-    ctx.bezierCurveTo(230, 525 + shift, 290, 480 + shift, 400, 515 + shift);
-    ctx.lineTo(400, 700 + shift); ctx.lineTo(0, 700 + shift);
-    ctx.closePath(); ctx.fill();
+    // 远山（4 层剪影，逐层加深）
+    const hills = [
+        {c: '#1E2438', pts: [[0,510],[50,480],[120,500],[190,470],[270,490],[340,465],[400,480]]},
+        {c: '#161B2E', pts: [[0,540],[60,510],[140,530],[220,505],[300,525],[370,500],[400,515]]},
+        {c: '#0F1320', pts: [[0,570],[70,545],[150,565],[240,540],[320,560],[390,535],[400,550]]},
+        {c: '#0A0E1A', pts: [[0,600],[80,580],[170,595],[260,575],[350,590],[400,570]]}
+    ];
+    hills.forEach(hill => {
+        ctx.fillStyle = hill.c;
+        ctx.beginPath();
+        ctx.moveTo(hill.pts[0][0], hill.pts[0][1] + shift);
+        for (let i = 1; i < hill.pts.length; i++) {
+            const prev = hill.pts[i-1];
+            const curr = hill.pts[i];
+            ctx.bezierCurveTo(
+                prev[0] + (curr[0] - prev[0]) * 0.4, prev[1] + shift,
+                curr[0] - (curr[0] - prev[0]) * 0.4, curr[1] + shift,
+                curr[0], curr[1] + shift
+            );
+        }
+        ctx.lineTo(400, 700 + shift); ctx.lineTo(0, 700 + shift); ctx.closePath(); ctx.fill();
+    });
 
-    ctx.fillStyle = '#1B263B';
-    ctx.beginPath();
-    ctx.moveTo(0, 570 + shift);
-    ctx.bezierCurveTo(70, 545 + shift, 150, 520 + shift, 230, 550 + shift);
-    ctx.bezierCurveTo(300, 575 + shift, 360, 535 + shift, 400, 560 + shift);
-    ctx.lineTo(400, 700 + shift); ctx.lineTo(0, 700 + shift);
-    ctx.closePath(); ctx.fill();
+    // 远景小树林（15 个暗色小圆弧）
+    ctx.fillStyle = '#0D1117';
+    const moonTrees = [25,55,95,135,175,225,265,305,345,385,45,115,195,285,365];
+    moonTrees.forEach(tx => {
+        const ty = 570 + shift - Math.abs(Math.sin(tx * 0.15)) * 12;
+        ctx.beginPath(); ctx.arc(tx, ty, 2.5 + Math.sin(tx * 0.4) * 1.5, 0, Math.PI * 2); ctx.fill();
+    });
 
-    // 水面
-    ctx.fillStyle = '#1B263B';
+    // 水面（底部 25%）
+    ctx.fillStyle = '#1A1F2E';
     ctx.fillRect(0, 620 + shift, GAME_WIDTH, 80);
 
-    // 月光反射
-    for (let i = 0; i < 7; i++) {
-        const rw = 90 - i * 11;
-        ctx.fillStyle = `rgba(254, 250, 224, ${0.1 - i * 0.012})`;
-        ctx.fillRect(mx - rw / 2, 630 + shift + i * 10, rw, 2);
+    // 月光水平波纹（8 条）
+    for (let i = 0; i < 8; i++) {
+        const ww = 70 - i * 7;
+        ctx.fillStyle = `rgba(232,230,217,${0.08 - i * 0.008})`;
+        ctx.beginPath(); ctx.ellipse(mx, 630 + shift + i * 10, ww / 2, 1.8, 0, 0, Math.PI * 2); ctx.fill();
     }
 
-    // 流星线
-    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-    ctx.lineWidth = 1.2;
-    ctx.beginPath(); ctx.moveTo(340, 40); ctx.lineTo(260, 115); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(90, 90); ctx.lineTo(25, 155); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(380, 180); ctx.lineTo(310, 240); ctx.stroke();
+    // 薄云（2 朵暗蓝灰）
+    ctx.fillStyle = 'rgba(100,110,140,0.1)';
+    ctx.beginPath(); ctx.ellipse(100, 80 + shift * 0.04, 60, 18, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(320, 110 + shift * 0.04, 80, 22, 0, 0, Math.PI * 2); ctx.fill();
 
     ctx.globalAlpha = 1;
 }
 
-// 场景4：雷暴（参考图4：黑白、厚重积雨云、雨线、高对比）
-function drawScene4(alpha, height) {
+// ========== 场景 4：雷暴云层（300-400m）— 参考图 4 还原 ==========
+function drawScene4(alpha, h) {
     if (alpha <= 0.01) return;
     ctx.globalAlpha = alpha;
-    const shift = (height - 300) * 3.5;
+    const shift = (h - 300) * 3.5;
 
-    // 背景：近黑
-    ctx.fillStyle = '#121212';
+    // 天空底色（深灰蓝，非纯黑）
+    ctx.fillStyle = '#18181F';
     ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-    // 积雨云（多层厚重椭圆，白/灰）
-    const stormClouds = [
-        {x: 90, y: 90 + shift, rx: 85, ry: 45, c: '#EEEEEE'}, {x: 220, y: 70 + shift, rx: 100, ry: 50, c: '#F5F5F5'},
-        {x: 340, y: 100 + shift, rx: 80, ry: 42, c: '#E0E0E0'}, {x: 150, y: 140 + shift, rx: 110, ry: 55, c: '#BDBDBD'},
-        {x: 300, y: 160 + shift, rx: 120, ry: 60, c: '#EEEEEE'}, {x: 50, y: 180 + shift, rx: 90, ry: 48, c: '#9E9E9E'},
-        {x: 200, y: 200 + shift, rx: 100, ry: 52, c: '#E0E0E0'}, {x: 360, y: 210 + shift, rx: 85, ry: 45, c: '#BDBDBD'},
-        {x: 130, y: 250 + shift, rx: 130, ry: 65, c: '#F5F5F5'}, {x: 320, y: 270 + shift, rx: 95, ry: 50, c: '#E0E0E0'},
-        {x: 60, y: 310 + shift, rx: 75, ry: 40, c: '#9E9E9E'}, {x: 260, y: 330 + shift, rx: 110, ry: 58, c: '#BDBDBD'}
+    // 积雨云：多层重叠，共 24 个云团，分 3 层
+    // 底层暗云（10 朵）
+    const darkClouds = [
+        {x: 60, y: 280, rx: 100, ry: 50}, {x: 200, y: 310, rx: 130, ry: 60},
+        {x: 340, y: 290, rx: 110, ry: 55}, {x: 30, y: 350, rx: 90, ry: 45},
+        {x: 150, y: 380, rx: 120, ry: 55}, {x: 300, y: 370, rx: 100, ry: 50},
+        {x: 80, y: 420, rx: 110, ry: 52}, {x: 260, y: 430, rx: 90, ry: 48},
+        {x: 370, y: 410, rx: 85, ry: 45}, {x: 40, y: 460, rx: 95, ry: 50}
     ];
-
-    stormClouds.forEach(c => {
-        if (c.y > -80 && c.y < GAME_HEIGHT + 80) {
-            ctx.fillStyle = c.c;
-            ctx.beginPath(); ctx.ellipse(c.x, c.y, c.rx, c.ry, 0, 0, Math.PI * 2); ctx.fill();
+    darkClouds.forEach(c => {
+        const cy = c.y + shift;
+        if (cy > -80 && cy < GAME_HEIGHT + 80) {
+            ctx.fillStyle = '#2A2A3A';
+            ctx.beginPath(); ctx.ellipse(c.x, cy, c.rx, c.ry, 0, 0, Math.PI * 2); ctx.fill();
+            // 底部压暗
+            ctx.fillStyle = 'rgba(20,20,30,0.4)';
+            ctx.beginPath(); ctx.ellipse(c.x, cy + c.ry * 0.4, c.rx * 0.9, c.ry * 0.5, 0, 0, Math.PI * 2); ctx.fill();
         }
     });
 
-    // 雨线（斜向，从左上到右下）
-    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    // 中层云（8 朵）
+    const midClouds = [
+        {x: 100, y: 180, rx: 120, ry: 55}, {x: 280, y: 160, rx: 110, ry: 50},
+        {x: 50, y: 220, rx: 90, ry: 45}, {x: 200, y: 240, rx: 100, ry: 48},
+        {x: 350, y: 210, rx: 95, ry: 46}, {x: 140, y: 130, rx: 105, ry: 52},
+        {x: 320, y: 120, rx: 85, ry: 42}, {x: 30, y: 160, rx: 80, ry: 40}
+    ];
+    midClouds.forEach(c => {
+        const cy = c.y + shift;
+        if (cy > -80 && cy < GAME_HEIGHT + 80) {
+            ctx.fillStyle = '#3A3A4A';
+            ctx.beginPath(); ctx.ellipse(c.x, cy, c.rx, c.ry, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#4A4A5A';
+            ctx.beginPath(); ctx.ellipse(c.x - 15, cy - 8, c.rx * 0.7, c.ry * 0.85, 0, 0, Math.PI * 2); ctx.fill();
+        }
+    });
+
+    // 顶层亮云（6 朵）
+    const topClouds = [
+        {x: 150, y: 70, rx: 130, ry: 58}, {x: 300, y: 55, rx: 120, ry: 52},
+        {x: 80, y: 100, rx: 100, ry: 48}, {x: 250, y: 90, rx: 110, ry: 50},
+        {x: 370, y: 80, rx: 90, ry: 45}, {x: 30, y: 60, rx: 85, ry: 42}
+    ];
+    topClouds.forEach(c => {
+        const cy = c.y + shift;
+        if (cy > -80 && cy < GAME_HEIGHT + 80) {
+            ctx.fillStyle = '#4A4A5A';
+            ctx.beginPath(); ctx.ellipse(c.x, cy, c.rx, c.ry, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#5A5A6A';
+            ctx.beginPath(); ctx.ellipse(c.x - 20, cy - 10, c.rx * 0.65, c.ry * 0.8, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#6A6A7A';
+            ctx.beginPath(); ctx.ellipse(c.x + 10, cy - 15, c.rx * 0.5, c.ry * 0.7, 0, 0, Math.PI * 2); ctx.fill();
+        }
+    });
+
+    // 雨线（60 条，斜向 75°）
+    ctx.strokeStyle = 'rgba(160,160,170,0.22)';
     ctx.lineWidth = 1;
-    const rainSeed = [15, 45, 75, 105, 135, 165, 195, 225, 255, 285, 315, 345, 30, 90, 150, 210, 270, 330, 60, 120, 180, 240, 300, 360, 10, 50, 110, 170, 230, 290, 350, 20, 80, 140, 200, 260, 320, 40, 100, 160];
-    rainSeed.forEach((rx, i) => {
-        const ry = (i * 37 + 180) % 350 + 120 + shift * 0.3;
-        if (ry > 0 && ry < GAME_HEIGHT) {
-            ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx - 5, ry + 28); ctx.stroke();
+    for (let i = 0; i < 60; i++) {
+        const rx = (i * 47 + 20) % (GAME_WIDTH + 40) - 20;
+        const ry = (i * 61 + 150) % (GAME_HEIGHT + 60) + 80 + shift * 0.3;
+        const rlen = 15 + (i % 5) * 7;
+        if (ry > 0 && ry < GAME_HEIGHT + 30) {
+            ctx.beginPath();
+            ctx.moveTo(rx, ry);
+            ctx.lineTo(rx - 4, ry + rlen);
+            ctx.stroke();
         }
-    });
+    }
+
+    // 雨雾全局覆盖
+    ctx.fillStyle = 'rgba(140,140,150,0.06)';
+    ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
     ctx.globalAlpha = 1;
 }
 
-// 场景5：近地轨道（参考图5：地球弧线、蓝色大气、陆地、云层、太空背景）
-function drawScene5(alpha, height) {
+// ========== 场景 5：近地轨道（400-500m）— 参考图 5 还原 ==========
+function drawScene5(alpha, h) {
     if (alpha <= 0.01) return;
     ctx.globalAlpha = alpha;
-    const shift = (height - 400) * 3.5;
+    const shift = (h - 400) * 3.5;
 
-    // 太空背景
-    ctx.fillStyle = '#000000';
+    // 太空背景（极黑 → 深蓝黑）
+    const g5 = ctx.createRadialGradient(200, 350, 50, 200, 350, 400);
+    g5.addColorStop(0, '#050508');
+    g5.addColorStop(1, '#0A0F1E');
+    ctx.fillStyle = g5;
     ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-    // 稀疏星星
-    ctx.fillStyle = 'rgba(255,255,255,0.8)';
-    const s5stars = [[30,40],[80,120],[150,60],[250,30],[320,100],[370,50],[40,250],[200,180],[350,220],[100,300],[280,280],[380,350],[60,400],[180,350],[330,420]];
+    // 稀疏星星（20 颗）
+    const s5stars = [
+        [20,30],[70,80],[130,40],[200,90],[280,25],[350,60],[40,150],[110,120],[190,170],[260,140],
+        [330,190],[60,250],[150,220],[240,260],[310,240],[90,330],[180,300],[270,340],[350,310],[30,280]
+    ];
     s5stars.forEach(s => {
-        ctx.beginPath(); ctx.arc(s[0], s[1], 1.2, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = `rgba(255,255,255,${0.4 + Math.sin(s[0] * 0.5) * 0.3})`;
+        ctx.beginPath(); ctx.arc(s[0], s[1], 1 + (s[0] % 3) * 0.3, 0, Math.PI * 2); ctx.fill();
     });
 
-    // 地球（巨大球体从下方进入）
-    const earthY = 920 + shift;
-    const earthR = 520;
-
-    // 大气层光晕（蓝色边缘）
-    const atmo = ctx.createRadialGradient(200, earthY, earthR - 40, 200, earthY, earthR + 80);
-    atmo.addColorStop(0, 'rgba(66, 165, 245, 0)');
-    atmo.addColorStop(0.6, 'rgba(66, 165, 245, 0.2)');
-    atmo.addColorStop(0.85, 'rgba(66, 165, 245, 0.55)');
-    atmo.addColorStop(1, 'rgba(66, 165, 245, 0)');
-    ctx.fillStyle = atmo;
-    ctx.beginPath(); ctx.arc(200, earthY, earthR + 80, 0, Math.PI * 2); ctx.fill();
+    // 地球（巨大球体，中心在画面下方）
+    const earthY = 950 + shift;
+    const earthR = 580;
 
     // 海洋
-    ctx.fillStyle = '#0D47A1';
-    ctx.beginPath(); ctx.arc(200, earthY, earthR, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#1A2A3A';
+    ctx.beginPath(); ctx.arc(200, earthY, earthR, Math.PI * 0.85, Math.PI * 0.15, true); ctx.fill();
 
-    // 陆地（非洲/欧洲状色块）
-    ctx.fillStyle = '#1B5E20';
+    // 陆地（3 块贝塞尔曲线大陆，暗灰绿）
+    ctx.fillStyle = '#2E3A2E';
     ctx.beginPath();
-    ctx.moveTo(20, earthY - 120);
-    ctx.bezierCurveTo(80, earthY - 200, 180, earthY - 220, 280, earthY - 170);
-    ctx.bezierCurveTo(340, earthY - 130, 360, earthY - 40, 300, earthY + 30);
-    ctx.bezierCurveTo(240, earthY + 70, 140, earthY + 60, 80, earthY - 20);
-    ctx.bezierCurveTo(40, earthY - 60, 10, earthY - 90, 20, earthY - 120);
+    ctx.moveTo(20, earthY - 80);
+    ctx.bezierCurveTo(60, earthY - 180, 160, earthY - 220, 260, earthY - 160);
+    ctx.bezierCurveTo(320, earthY - 130, 360, earthY - 60, 300, earthY - 20);
+    ctx.bezierCurveTo(240, earthY + 20, 140, earthY + 10, 80, earthY - 40);
+    ctx.bezierCurveTo(40, earthY - 60, 10, earthY - 70, 20, earthY - 80);
     ctx.closePath(); ctx.fill();
 
-    ctx.fillStyle = '#2E7D32';
+    ctx.fillStyle = '#3A4A3A';
     ctx.beginPath();
-    ctx.moveTo(260, earthY - 100);
-    ctx.bezierCurveTo(330, earthY - 140, 390, earthY - 100, 395, earthY - 30);
-    ctx.bezierCurveTo(400, earthY + 40, 360, earthY + 100, 290, earthY + 80);
-    ctx.bezierCurveTo(230, earthY + 60, 220, earthY - 10, 260, earthY - 100);
+    ctx.moveTo(280, earthY - 120);
+    ctx.bezierCurveTo(340, earthY - 160, 390, earthY - 120, 395, earthY - 60);
+    ctx.bezierCurveTo(400, earthY - 10, 360, earthY + 40, 300, earthY + 20);
+    ctx.bezierCurveTo(260, earthY + 5, 250, earthY - 50, 280, earthY - 120);
     ctx.closePath(); ctx.fill();
 
-    // 云层（白色半透明带状）
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.beginPath(); ctx.ellipse(140, earthY - 140, 90, 22, 0.15, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(300, earthY - 80, 110, 28, -0.1, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(180, earthY + 10, 130, 32, 0.08, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(320, earthY + 60, 80, 20, -0.15, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#2E3A2E';
+    ctx.beginPath();
+    ctx.moveTo(100, earthY + 30);
+    ctx.bezierCurveTo(150, earthY + 80, 220, earthY + 100, 280, earthY + 70);
+    ctx.bezierCurveTo(330, earthY + 45, 350, earthY + 10, 320, earthY - 20);
+    ctx.bezierCurveTo(280, earthY - 40, 200, earthY - 30, 140, earthY - 10);
+    ctx.bezierCurveTo(90, earthY + 5, 80, earthY + 20, 100, earthY + 30);
+    ctx.closePath(); ctx.fill();
+
+    // 云层（4 条白色云带，半透明椭圆堆叠）
+    ctx.fillStyle = 'rgba(220,220,230,0.25)';
+    const cloudBands = [
+        {x: 140, y: earthY - 140, rx: 90, ry: 18}, {x: 260, y: earthY - 100, rx: 110, ry: 22},
+        {x: 180, y: earthY - 50, rx: 130, ry: 25}, {x: 300, y: earthY + 10, rx: 80, ry: 16}
+    ];
+    cloudBands.forEach(c => {
+        ctx.beginPath(); ctx.ellipse(c.x, c.y, c.rx, c.ry, 0.1, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(c.x + 20, c.y + 5, c.rx * 0.7, c.ry * 0.8, -0.05, 0, Math.PI * 2); ctx.fill();
+    });
+
+    // 大气层光晕（地球边缘蓝色径向渐变）
+    const atmo = ctx.createRadialGradient(200, earthY, earthR - 15, 200, earthY, earthR + 25);
+    atmo.addColorStop(0, 'rgba(74,106,138,0)');
+    atmo.addColorStop(0.5, 'rgba(74,106,138,0.3)');
+    atmo.addColorStop(0.85, 'rgba(90,130,180,0.5)');
+    atmo.addColorStop(1, 'rgba(74,106,138,0)');
+    ctx.fillStyle = atmo;
+    ctx.beginPath(); ctx.arc(200, earthY, earthR + 25, 0, Math.PI * 2); ctx.fill();
 
     // 晨昏线（暗部覆盖左侧）
-    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fillStyle = 'rgba(10,15,30,0.45)';
     ctx.beginPath();
     ctx.moveTo(0, 0); ctx.lineTo(GAME_WIDTH, 0); ctx.lineTo(GAME_WIDTH, earthY);
     ctx.arc(200, earthY, earthR, 0, Math.PI, true);
     ctx.lineTo(0, earthY); ctx.closePath(); ctx.fill();
 
+    // 远处卫星/碎片（3 个光点带轨迹）
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.beginPath(); ctx.arc(80, 120 + shift * 0.05, 1.5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(80, 120 + shift * 0.05); ctx.lineTo(65, 110 + shift * 0.05); ctx.stroke();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.beginPath(); ctx.arc(340, 200 + shift * 0.03, 1, 0, Math.PI * 2); ctx.fill();
+
     ctx.globalAlpha = 1;
 }
 
-// 场景6：外太空（参考图6：深紫背景、星云、小行星带、陨石坑）
-function drawScene6(alpha, height) {
+// ========== 场景 6：外太空（500m+）— 参考图 6 还原 ==========
+function drawScene6(alpha, h) {
     if (alpha <= 0.01) return;
     ctx.globalAlpha = alpha;
-    const shift = (height - 500) * 2.5;
+    const shift = (h - 500) * 2.5;
 
-    // 深紫背景
+    // 深紫黑背景
     const g6 = ctx.createRadialGradient(200, 350, 30, 200, 350, 450);
-    g6.addColorStop(0, '#1A0B2E');
-    g6.addColorStop(1, '#0A0514');
+    g6.addColorStop(0, '#0A0A12');
+    g6.addColorStop(1, '#151520');
     ctx.fillStyle = g6;
     ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-    // 星云雾气（淡紫）
-    const neb1 = ctx.createRadialGradient(80, 180, 10, 80, 180, 220);
-    neb1.addColorStop(0, 'rgba(124, 77, 255, 0.12)');
-    neb1.addColorStop(1, 'rgba(124, 77, 255, 0)');
-    ctx.fillStyle = neb1; ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+    // 星云团 1（左上，淡紫雾）
+    const neb1 = ctx.createRadialGradient(80, 150, 10, 80, 150, 180);
+    neb1.addColorStop(0, 'rgba(120,100,160,0.1)');
+    neb1.addColorStop(1, 'rgba(120,100,160,0)');
+    ctx.fillStyle = neb1;
+    ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-    const neb2 = ctx.createRadialGradient(340, 520, 20, 340, 520, 250);
-    neb2.addColorStop(0, 'rgba(100, 181, 246, 0.08)');
-    neb2.addColorStop(1, 'rgba(100, 181, 246, 0)');
-    ctx.fillStyle = neb2; ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+    // 星云团 2（右下，淡蓝雾）
+    const neb2 = ctx.createRadialGradient(340, 520, 20, 340, 520, 200);
+    neb2.addColorStop(0, 'rgba(100,130,180,0.08)');
+    neb2.addColorStop(1, 'rgba(100,130,180,0)');
+    ctx.fillStyle = neb2;
+    ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-    // 星星（较多）
-    ctx.fillStyle = 'rgba(255,255,255,0.9)';
-    for (let i = 0; i < 45; i++) {
-        const sx = (i * 47 + 15) % GAME_WIDTH;
-        const sy = (i * 61 + 30) % GAME_HEIGHT;
-        ctx.beginPath(); ctx.arc(sx, sy + shift * 0.05, 1 + (i % 3) * 0.4, 0, Math.PI * 2); ctx.fill();
+    // 星云团 3（中央偏右，淡粉紫）
+    const neb3 = ctx.createRadialGradient(250, 300, 15, 250, 300, 140);
+    neb3.addColorStop(0, 'rgba(160,120,140,0.06)');
+    neb3.addColorStop(1, 'rgba(160,120,140,0)');
+    ctx.fillStyle = neb3;
+    ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+    // 星星（40 颗，白色/淡蓝白）
+    for (let i = 0; i < 40; i++) {
+        const sx = (i * 53 + 15) % GAME_WIDTH;
+        const sy = (i * 71 + 25) % GAME_HEIGHT;
+        const size = 0.8 + (i % 5) * 0.35;
+        const blueness = i % 3 === 0 ? '220,230,255' : '255,255,255';
+        ctx.fillStyle = `rgba(${blueness},${0.5 + (i % 4) * 0.12})`;
+        ctx.beginPath(); ctx.arc(sx, sy + shift * 0.02, size, 0, Math.PI * 2); ctx.fill();
+        // 部分带十字
+        if (i % 7 === 0) {
+            ctx.strokeStyle = `rgba(${blueness},0.15)`;
+            ctx.lineWidth = 0.5;
+            ctx.beginPath(); ctx.moveTo(sx - 3, sy + shift * 0.02); ctx.lineTo(sx + 3, sy + shift * 0.02); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(sx, sy + shift * 0.02 - 3); ctx.lineTo(sx, sy + shift * 0.02 + 3); ctx.stroke();
+        }
     }
 
-    // 小行星（不规则多边形 + 陨石坑）
+    // 小行星（8 颗，不规则贝塞尔岩石，灰紫色）
     const roids = [
-        {x: 75, y: 140, r: 20, rot: 0.3, shape: [1,0.85,1.1,0.9,1.05,0.8,1.15,0.95]},
-        {x: 345, y: 290, r: 28, rot: -0.2, shape: [0.95,1.05,0.85,1.1,0.9,1.0,0.8,1.15]},
-        {x: 55, y: 430, r: 16, rot: 0.6, shape: [1.1,0.9,1.0,0.85,1.05,0.95,0.9,1.1]},
-        {x: 355, y: 125, r: 12, rot: -0.1, shape: [0.9,1.0,0.85,1.05,0.95,0.9,1.1,0.8]},
-        {x: 205, y: 560, r: 32, rot: 0.4, shape: [1.0,0.9,1.1,0.85,1.05,0.95,0.9,1.15]},
-        {x: 125, y: 630, r: 18, rot: -0.35, shape: [0.85,1.05,0.9,1.0,1.1,0.8,0.95,1.1]},
-        {x: 310, y: 490, r: 14, rot: 0.15, shape: [1.05,0.9,1.0,0.85,1.1,0.95,0.9,1.0]},
-        {x: 35, y: 310, r: 17, rot: 0.55, shape: [0.9,1.1,0.85,0.95,1.05,0.9,1.0,0.8]},
-        {x: 375, y: 390, r: 21, rot: -0.25, shape: [1.0,0.85,1.05,0.9,1.1,0.95,0.85,1.05]}
+        {x: 70, y: 130, r: 22, pts: [[1,0.3],[0.8,0.9],[0.2,1.1],[-0.4,0.8],[-0.9,0.2],[-0.6,-0.5],[0.1,-0.9],[0.7,-0.6]]},
+        {x: 340, y: 280, r: 30, pts: [[0.9,0.1],[1.05,0.6],[0.7,1.0],[0.1,1.15],[-0.5,0.9],[-0.8,0.4],[-0.6,-0.3],[0.2,-0.8],[0.6,-0.5]]},
+        {x: 50, y: 430, r: 18, pts: [[1,0.2],[0.85,0.8],[0.3,1.0],[-0.3,0.85],[-0.8,0.3],[-0.5,-0.4],[0.2,-0.9],[0.7,-0.4]]},
+        {x: 360, y: 120, r: 14, pts: [[1,0.1],[0.9,0.7],[0.4,0.95],[-0.2,0.8],[-0.7,0.4],[-0.5,-0.2],[0.1,-0.85],[0.6,-0.5]]},
+        {x: 200, y: 560, r: 35, pts: [[1,0.2],[0.95,0.7],[0.6,1.05],[0.1,1.1],[-0.4,0.95],[-0.8,0.5],[-0.7,-0.1],[-0.3,-0.7],[0.3,-0.95],[0.7,-0.6]]},
+        {x: 120, y: 630, r: 20, pts: [[0.95,0.3],[0.8,0.85],[0.2,1.05],[-0.4,0.9],[-0.75,0.4],[-0.55,-0.2],[0,-0.85],[0.5,-0.6],[0.7,-0.3]]},
+        {x: 310, y: 490, r: 16, pts: [[1,0.15],[0.85,0.75],[0.35,0.95],[-0.25,0.8],[-0.7,0.35],[-0.5,-0.25],[0.1,-0.8],[0.6,-0.5]]},
+        {x: 35, y: 310, r: 19, pts: [[0.9,0.25],[0.75,0.8],[0.25,1.0],[-0.35,0.85],[-0.75,0.3],[-0.55,-0.3],[0.05,-0.85],[0.55,-0.55]]}
     ];
 
     roids.forEach(a => {
-        const ay = a.y + shift * 0.4;
-        if (ay < -50 || ay > GAME_HEIGHT + 50) return;
+        const ay = a.y + shift * 0.3;
+        if (ay < -60 || ay > GAME_HEIGHT + 60) return;
         ctx.save();
         ctx.translate(a.x, ay);
-        ctx.rotate(a.rot + shift * 0.0005); // 极缓慢自转
+        ctx.rotate(shift * 0.0003);
 
         // 不规则主体
-        ctx.fillStyle = '#5C6BC0';
+        ctx.fillStyle = '#4A4A5A';
         ctx.beginPath();
-        const sides = 8;
-        for (let i = 0; i < sides; i++) {
-            const angle = (Math.PI * 2 / sides) * i - 0.3;
-            const rad = a.r * a.shape[i];
+        a.pts.forEach((p, i) => {
+            const angle = (Math.PI * 2 / a.pts.length) * i - 0.2;
+            const rad = a.r * p[0];
             const px = Math.cos(angle) * rad;
-            const py = Math.sin(angle) * rad;
+            const py = Math.sin(angle) * rad * p[1];
             if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-        }
+        });
         ctx.closePath(); ctx.fill();
 
-        // 陨石坑（深色圆形凹陷）
-        ctx.fillStyle = '#3949AB';
-        ctx.beginPath(); ctx.arc(-a.r * 0.35, -a.r * 0.25, a.r * 0.22, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(a.r * 0.3, a.r * 0.35, a.r * 0.18, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(-a.r * 0.15, a.r * 0.45, a.r * 0.14, 0, Math.PI * 2); ctx.fill();
+        // 陨石坑（3-5 个深色凹陷）
+        const craters = [
+            {cx: -a.r * 0.3, cy: -a.r * 0.2, cr: a.r * 0.18},
+            {cx: a.r * 0.25, cy: a.r * 0.3, cr: a.r * 0.15},
+            {cx: -a.r * 0.1, cy: a.r * 0.45, cr: a.r * 0.12}
+        ];
+        craters.forEach(c => {
+            ctx.fillStyle = '#2A2A3A';
+            ctx.beginPath(); ctx.arc(c.cx, c.cy, c.cr, 0, Math.PI * 2); ctx.fill();
+            // 坑边缘提亮
+            ctx.strokeStyle = '#5A5A6A';
+            ctx.lineWidth = 0.8;
+            ctx.beginPath(); ctx.arc(c.cx, c.cy, c.cr, 0, Math.PI * 2); ctx.stroke();
+        });
 
         ctx.restore();
     });
+
+    // 远处淡雾
+    ctx.fillStyle = 'rgba(180,160,200,0.03)';
+    ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
     ctx.globalAlpha = 1;
 }
@@ -882,7 +1067,6 @@ function drawScene6(alpha, height) {
 function drawSceneBackground(mix) {
     const { idx, t } = mix;
 
-    // 计算6个场景的alpha
     let a = [0,0,0,0,0,0];
     if (idx === 0) { a[0] = 1 - t; a[1] = t; }
     else if (idx === 1) { a[1] = 1 - t; a[2] = t; }
@@ -895,7 +1079,6 @@ function drawSceneBackground(mix) {
     ctx.translate(offsetX, offsetY);
     ctx.scale(scale, scale);
 
-    // 按场景顺序绘制（从远到近/从旧到新）
     drawScene1(a[0], height);
     drawScene2(a[1], height);
     drawScene3(a[2], height);
@@ -903,19 +1086,19 @@ function drawSceneBackground(mix) {
     drawScene5(a[4], height);
     drawScene6(a[5], height);
 
-    // 闪电效果（叠加在所有场景之上）
+    // 闪电效果（叠加）
     if (lightningFlash > 0) {
         ctx.globalAlpha = (lightningFlash / 20) * a[3];
         ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
         ctx.strokeStyle = '#FFF';
-        ctx.lineWidth = 2.5;
-        ctx.shadowColor = '#FFF'; ctx.shadowBlur = 20;
+        ctx.lineWidth = 2;
+        ctx.shadowColor = 'rgba(200,200,255,0.5)'; ctx.shadowBlur = 15;
         ctx.beginPath();
-        let lx = 80 + Math.random() * 240, ly = -30;
+        let lx = 80 + Math.random() * 240, ly = -20;
         ctx.moveTo(lx, ly);
-        for (let i = 0; i < 7; i++) {
-            lx += (Math.random() - 0.5) * 70; ly += 50 + Math.random() * 50;
+        for (let i = 0; i < 8; i++) {
+            lx += (Math.random() - 0.5) * 60; ly += 45 + Math.random() * 45;
             ctx.lineTo(lx, ly);
         }
         ctx.stroke();
@@ -1163,7 +1346,7 @@ document.getElementById('startBtn').addEventListener('touchend', (e) => { e.prev
 document.getElementById('restartBtn').addEventListener('click', restartGame);
 document.getElementById('restartBtn').addEventListener('touchend', (e) => { e.preventDefault(); restartGame(); });
 
-initStars(); initClouds(); initRain(); resizeCanvas(); gameLoop();
+resizeCanvas(); gameLoop();
 </script>
 </body>
 </html>
